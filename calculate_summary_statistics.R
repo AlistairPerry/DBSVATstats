@@ -65,5 +65,5 @@ Max.Age = max(Age))
 
 print(Group.By.Numeric)
 
-#Is there a way to do this more elegantly with a for loop such that all summary statistics can be calculated iteratively? Something like "for i in ... for the numeric and factor variables in Baseline.
-
+#Is there a way to do this more elegantly with a for loop such that all summary statistics can be calculated iteratively?
+Something like "for i in ... for the numeric and factor variables in Baseline.
