@@ -1,0 +1,139 @@
+---
+title: "Alistair PD subjects: Caregiver clustering analysis"
+author: "David Smith"
+date: "26 Jul 2017"
+output: html_document
+---
+
+```{r prelim, include=FALSE}
+
+options(stringsAsFactors=FALSE)
+html.table.attributes <- 'border=1'
+set.seed(123)
+
+library(dplyr)
+library(plyr)
+
+library(reshape2)
+
+library(Hmisc)
+library(Gmisc)
+
+library(kml)
+
+
+#set working directory to your path
+setwd("~/Dropbox/Statistical Analyses Parkinsons Disease and DBS/Syntax/R Code for kml longitudinal clustering")
+
+
+#download the imputed data set from the dropbox that Phil made.
+#that path should appear below
+cart.impute.stacked.long.unified<-read.csv("~/Dropbox/Statistical Analyses Parkinsons Disease and DBS/Data sets/07 2017 DATA SET UPDATED/stacked_long_unified_with_cart_imputation.csv")[,-1]
+
+
+#BEGIN DERIVED VARIABLES HERE
+cart.impute.stacked.long.unified$Apathy_TotalYN<-ifelse(cart.impute.stacked.long.unified$Apathy_Total>=14,1,0)
+cart.impute.stacked.long.unified$Apathy_TotalYN<-factor(cart.impute.stacked.long.unified$Apathy_TotalYN,labels=c("No Apathy","Yes Apathy"))
+
+cart.impute.stacked.long.unified$BIS_TotalYN<-ifelse(cart.impute.stacked.long.unified$BIS_Total>=65,1,0)
+cart.impute.stacked.long.unified$BIS_TotalYN<-factor(cart.impute.stacked.long.unified$BIS_TotalYN,labels=c("No Impulsivity","Yes Impulsivity"))
+
+cart.impute.stacked.long.unified$EQ_TotalYN<-ifelse(cart.impute.stacked.long.unified$EQ_Total>=30,1,0)
+cart.impute.stacked.long.unified$EQ_TotalYN<-factor(cart.impute.stacked.long.unified$EQ_TotalYN,labels=c("Low Empathy","Normal Empathy"))
+
+cart.impute.stacked.long.unified$BDI_TotalCat<-cut(cart.impute.stacked.long.unified$BDI_Total, breaks=c(-1, 14, 20, 1000))
+levels(cart.impute.stacked.long.unified$BDI_TotalCat)<-c("No Depr","Mild Depr","Mod Depr+")
+
+cart.impute.stacked.long.unified$GAI_TotalYN<-ifelse(cart.impute.stacked.long.unified$GAI_Total>=9,1,0)
+cart.impute.stacked.long.unified$GAI_TotalYN<-factor(cart.impute.stacked.long.unified$GAI_TotalYN,labels=c("No Anxiety","Anxiety"))
+
+cart.impute.stacked.long.unified$ZBI_TotalCat20<-cut(cart.impute.stacked.long.unified$ZBI_Total, breaks=c(-1, 20, 40, 60))
+levels(cart.impute.stacked.long.unified$ZBI_TotalCat20)<-c("Mild Burden","Mild-Mod Burden","Mod-Sev Burden")
+
+cart.impute.stacked.long.unified$ZBI_TotalCat14<-cut(cart.impute.stacked.long.unified$ZBI_Total, breaks=c(-1, 14, 28, 42))
+levels(cart.impute.stacked.long.unified$ZBI_TotalCat14)<-c("Mild Burden Phil","Mild-Mod Burden Phil","Mod-Sev Burden Phil")
+
+cart.impute.stacked.long.unified$MOCA_TotalYN<-ifelse(cart.impute.stacked.long.unified$MOCA_Total>=26,1,0)
+cart.impute.stacked.long.unified$MOCA_TotalYN<-factor(cart.impute.stacked.long.unified$MOCA_TotalYN,labels=c("No Impairment","Cog. Impairment"))
+
+
+cart.impute.stacked.long.unified$log0.Hayling_CatAErrors<-log(1+cart.impute.stacked.long.unified$Hayling_CatAErrors)
+cart.impute.stacked.long.unified$log0.Hayling_CatBErrors<-log(1+cart.impute.stacked.long.unified$Hayling_CatBErrors)
+cart.impute.stacked.long.unified$log0.Hayling_ABErrorScore<-log(1+cart.impute.stacked.long.unified$Hayling_ABErrorScore)
+cart.impute.stacked.long.unified$log0.ELF_Repetitions<-log(1+cart.impute.stacked.long.unified$ELF_Repetitions)
+cart.impute.stacked.long.unified$log0.ELF_RuleViolations<-log(1+cart.impute.stacked.long.unified$ELF_RuleViolations)
+cart.impute.stacked.long.unified$log0.DelayDiscount_K<-log(cart.impute.stacked.long.unified$DelayDiscount_K)
+cart.impute.stacked.long.unified$log0.LEDD<-log(1+cart.impute.stacked.long.unified$LEDD)
+
+#HERE ARE THE NEW DERIVED VARS
+#Apathy_TotalYN
+#BIS_TotalYN
+#EQ_TotalYN
+#BDI_TotalCat
+#GAI_TotalYN
+#ZBI_TotalCat20
+#ZBI_TotalCat14
+#MOCA_TotalYN
+#log0.Hayling_CatAErrors
+#log0.Hayling_CatBErrors
+#log0.Hayling_ABErrorScore
+#log0.ELF_Repetitions
+#log0.ELF_RuleViolations
+#log0.DelayDiscount_K
+#log0.LEDD
+#END DERIVED VARIABLES HERE
+
+
+#this container file has the same number of rows as the number of unique IDs, plus a few other variables.  This is where we are going to save the cluster assignments after we run the longitudinal clustering from kml.
+container.file.for.clusters.cart<-data.frame(ID=unique(cart.impute.stacked.long.unified$ID))
+container.file.for.clusters.cart<-merge(container.file.for.clusters.cart,cart.impute.stacked.long.unified[cart.impute.stacked.long.unified$TimepointNum==0,1:5], by="ID", all.x = F,all.y = F)
+
+
+#these are the list of endpoints for which we wish to find clusters
+#this for loops loops over the endpoints
+for (i in substr(c("_CarerBIS_Total", "_CarerBIS_Attentional", "_CarerBIS_Motor", "_CarerBIS_NonPlanning", "_CarerEQ_Total", "_ZBI_Total"),2,10000)){
+  
+#this step reshapes the data into the format that is necessary for kml
+this.vars.wide.version<-reshape(cart.impute.stacked.long.unified[,c("ID","TimepointNum",i)], idvar = "ID", timevar = "TimepointNum", direction = "wide")
+
+#for the given endpoint, run, the cluster pre=processing
+this.cld <- clusterLongData(traj=this.vars.wide.version, idAll = this.vars.wide.version$ID, timeInData = 2:6, 
+                time=c(0,2,6,13,26), varNames=i, maxNA=4)
+
+#apply kml, which results in the temporary containers below
+#this is where you change the options, like the rerolls and the max N of clusters to try.
+kml(this.cld,nbClusters=2:3,nbRedrawing=3,toPlot='none')
+this.var.2.cluster<-getClusters(this.cld, 2)
+this.var.3.cluster<-getClusters(this.cld, 3)
+this.name.2.clusters<-as.name(paste(i,".2.clusters",sep = "")) 
+this.name.3.clusters<-as.name(paste(i,".3.clusters",sep = ""))  
+
+#tack on the cluster assignments on the rightmost side of the data
+container.file.for.clusters.cart<-data.frame(container.file.for.clusters.cart,this.var.2.cluster,this.var.3.cluster)
+
+#tidy the results using sensible names
+ncols.container<-dim(container.file.for.clusters.cart)[2]
+names(container.file.for.clusters.cart)[(ncols.container-1):ncols.container]<-c(paste(i,".2.clusters",sep = ""),
+                                                                           paste(i,".3.clusters",sep = ""))
+
+#show the plots
+plot(this.cld, 2, parTraj=parTRAJ(col="clusters"))
+mtext(paste(i," 2 clusters",sep=""), side=3,adj=0.0,cex=2)
+plot(this.cld, 3, parTraj=parTRAJ(col="clusters"))
+mtext(paste(i," 3 clusters",sep=""), side=3,adj=0.0,cex=2)
+}
+
+#OPTIONAL and specific for Phils analysis: restrict to a small number of columns
+#nuke all of the ones with 3 clusters because in this case, 2 clusters is better
+container.file.for.clusters.cart<-container.file.for.clusters.cart[,c("ID", "ClinicalSubtype",
+                                                            "TremorAkinesiaSubtype", 
+                                                            "Gender", "Signif.Psych",
+                                                            "CarerBIS_Total.2.clusters",      
+                                                            "CarerBIS_Attentional.2.clusters",
+                                                            "CarerBIS_Motor.2.clusters", 
+                                                            "CarerBIS_NonPlanning.2.clusters", 
+                                                            "CarerEQ_Total.2.clusters", 
+                                                            "ZBI_Total.2.clusters")]
+
+#From here you can use the cluster assignments to test for diffs between cluster assignments and cases vs non-cases, or cluster assignments and outcomes or other types of t-tests / Fisher tests.
+
