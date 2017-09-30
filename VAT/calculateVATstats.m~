@@ -63,7 +63,7 @@ for s = 1:length(subFolders)
         Rmotorperc=0;
     else
         Rmotoroverlap=find(cors==1);
-        Rmotorperc=[length(Rmotoroverlap)./length(STNmotorRvoxs)]*100;
+        Rmotorperc=[Rmotoroverlap./length(r1)]*100;
     end
     
     %Left Motor
@@ -75,7 +75,7 @@ for s = 1:length(subFolders)
         Lmotorperc=0;
     else
         Lmotoroverlap=find(cors==1);
-        Lmotorperc=[length(Lmotoroverlap)./length(STNmotorLvoxs)]*100;
+        Lmotorperc=[Lmotoroverlap./length(l1)]*100;
     end
     
     %Right Assoc
@@ -87,7 +87,7 @@ for s = 1:length(subFolders)
         Rassocperc=0;
     else
         Rassocoverlap=find(cors==1);
-        Rassocperc=[length(Rassocoverlap)./length(STNassocRvoxs)]*100;
+        Rassocperc=[Rassocoverlap./length(r1)]*100;
     end
     
     %Left Assoc
@@ -99,7 +99,7 @@ for s = 1:length(subFolders)
         Lassocperc=0;
     else
         Lassocoverlap=find(cors==1);
-        Lassocperc=[length(Lassocoverlap)./length(STNassocLvoxs)]*100;
+        Lassocperc=[Lassocoverlap./length(l1)]*100;
     end
     
 %Combine individual VAT stats into single matrix    
@@ -114,12 +114,15 @@ end
 
 fid = fopen(['VATstats.txt'], 'wt');
 
-fprintf(fid, '%s\t%s\t%s\t%s\t%s\n', 'ID', 'Rmotorperc','Lmotorperc','Rassocperc','Lassocperc');
+fprintf(fid, '%s%s%s%s%s\n', 'ID', 'Rmotorperc','Lmotorperc','Rassocperc','Lassocperc');
 for s = 1:length(subFolders)
-    fprintf(fid, '%s\t%f\t%f\t%f\t%f\n', VATsubjids{s,1},VATstatsall(s,1),VATstatsall(s,2),VATstatsall(s,3),VATstatsall(s,4));
+    fprintf(fid, '%s%d\n', VATsubjids{s,1},VATstatsall(:,1),VATstatsall(:,2),VATs);
 end
 fclose(fid)
 
-%done!
+
+
+
+
 end
 
