@@ -44,10 +44,10 @@ for s = 1:length(subFolders)
     
     %parse VAT file strings
     VATsubjids{s,1} = currentSubj;
-    SubjRVATfile=[currentSubjDir '/' 'rLEAD_DBS_VAT_RIGHT.nii'];
+    SubjRVATfile=[currentSubjDir '/' 'aLEAD_DBS_VAT_RIGHT.nii'];
     [RVAThdr,RVATdata]=read(SubjRVATfile);
     
-    SubjLVATfile=[currentSubjDir '/' 'rLEAD_DBS_VAT_LEFT.nii'];
+    SubjLVATfile=[currentSubjDir '/' 'aLEAD_DBS_VAT_LEFT.nii'];
     [LVAThdr,LVATdata]=read(SubjLVATfile);
     
     %calculate proportion of stimulation field in each STN zone
