@@ -1,6 +1,9 @@
-function resliceLEADDBS_batch
+function resliceLEADDBS_batch(LEADDBSdir)
 %UNTITLED Summary of this function goes here
 %   Detailed explanation goes here
+
+%Inputs:
+%LEADDBSdir=Parent directory which contains subjects LEADDBS output (i.e. glanat.nii)
 %run in spm12
 
 %setup working and subjects directories
@@ -18,7 +21,7 @@ for s = 1:length(subFolders)
     spm('defaults', 'fMRI');
     spm_jobman('initcfg');
     
-    matlabbatchleft{1}.spm.spatial.coreg.write.ref = {['/home/alistairp/ldrive/Lab_MichaelB/PhilM/Tractography/Anatomical_Data/Lead_DBS_Analysis_2/LEAD_DBS_' currentSubj '/glanat.nii,1']};
+    matlabbatchleft{1}.spm.spatial.coreg.write.ref = {[LEADDBSdir '/' currentSubj '/glanat.nii,1']};
     matlabbatchleft{1}.spm.spatial.coreg.write.source = {[currentSubjDir '/' 'LEAD_DBS_VAT_LEFT.nii,1']};
     matlabbatchleft{1}.spm.spatial.coreg.write.roptions.interp = 0;
     matlabbatchleft{1}.spm.spatial.coreg.write.roptions.wrap = [0 0 0];
@@ -30,7 +33,7 @@ for s = 1:length(subFolders)
     spm('defaults', 'fMRI');
     spm_jobman('initcfg');
     
-    matlabbatchright{1}.spm.spatial.coreg.write.ref = {['/home/alistairp/ldrive/Lab_MichaelB/PhilM/Tractography/Anatomical_Data/Lead_DBS_Analysis_2/LEAD_DBS_' currentSubj '/glanat.nii,1']};
+    matlabbatchright{1}.spm.spatial.coreg.write.ref = {[LEADDBSdir '/' currentSubj '/glanat.nii,1']};
     matlabbatchright{1}.spm.spatial.coreg.write.source = {[currentSubjDir '/' 'LEAD_DBS_VAT_RIGHT.nii,1']};
     matlabbatchright{1}.spm.spatial.coreg.write.roptions.interp = 0;
     matlabbatchright{1}.spm.spatial.coreg.write.roptions.wrap = [0 0 0];
