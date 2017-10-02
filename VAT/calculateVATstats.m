@@ -1,7 +1,10 @@
-function [VATstatsall] = calculateVATstats(STNparcdir)
+function [VATstatsall] = calculateVATstats(STNparcdir,output)
 %UNTITLED Summary of this function goes here
 %   Detailed explanation goes here
-%inputs
+
+%Required arguments:
+    %STNparcdir=Directory containing files corresponding to STN zones
+    %output=Filename for extracted data table 
 
 %required software dependencies:
 %NBS
@@ -18,13 +21,18 @@ subFolders(1:2)=[];
 
 %load in STN parcels
 
-[STNmotorRhdr,STNmotorRdata]=read([STNparcdir '/' 'LEAD_DBS_STN_motor_RIGHT.nii']);
+[~,STNmotorRdata]=read([STNparcdir '/' 'LEAD_DBS_STN_motor_RIGHT.nii']);
 
-[STNmotorLhdr,STNmotorLdata]=read([STNparcdir '/' 'LEAD_DBS_STN_motor_LEFT.nii']);
+[~,STNmotorLdata]=read([STNparcdir '/' 'LEAD_DBS_STN_motor_LEFT.nii']);
 
-[STNassocLhdr,STNassocLdata]=read([STNparcdir '/' 'LEAD_DBS_STN_associative_LEFT.nii']);
+[~,STNassocLdata]=read([STNparcdir '/' 'LEAD_DBS_STN_associative_LEFT.nii']);
 
-[STNassocRhdr,STNassocRdata]=read([STNparcdir '/' 'LEAD_DBS_STN_associative_RIGHT.nii']);
+[~,STNassocRdata]=read([STNparcdir '/' 'LEAD_DBS_STN_associative_RIGHT.nii']);
+
+[~,STNlimbicRdata]=read([STNparcdir '/' 'LEAD_DBS_STN_limbic_RIGHT.nii']);
+
+[~,STNlimbicLdata]=read([STNparcdir '/' 'LEAD_DBS_STN_limbic_RIGHT.nii']);
+
 
 %extract their voxels
 [STNmotorRvoxs]=find(STNmotorRdata==1);
@@ -35,6 +43,10 @@ subFolders(1:2)=[];
 
 [STNassocLvoxs]=find(STNassocLdata==1);
 
+[STNlimbicRvoxs]=find(STNlimbicRdata==1);
+
+[STNlimbicLvoxs]=find(STNlimbicLdata==1);
+
 %load all subjects VATS and extract
 for s = 1:length(subFolders)
     VATindivstats=[];
@@ -43,7 +55,9 @@ for s = 1:length(subFolders)
     currentSubjDir = char([workingdirectory '/' currentSubj]);
     
     %parse VAT file strings
-    VATsubjids{s,1} = currentSubj;
+    %remove LEAD_DBS from ID strings
+    VATsubjids{s,1} = currentSubj(10:end);
+    
     SubjRVATfile=[currentSubjDir '/' 'aLEAD_DBS_VAT_RIGHT.nii'];
     [RVAThdr,RVATdata]=read(SubjRVATfile);
     
@@ -136,11 +150,11 @@ end
 
 %Now write VAT stats to output matrix
 
-fid = fopen(['VATstats.txt'], 'wt');
+fid = fopen([output '.txt'], 'wt');
 
-fprintf(fid, '%s\t%s\t%s\t%s\t%s\n', 'ID', 'Rmotorperc','Lmotorperc','Rassocperc','Lassocperc','Rlimbicperc','Llimbicperc');
+fprintf(fid, '%s\t%s\t%s\t%s\t%s\t%s\t%s\n', 'ID', 'Rmotorperc','Lmotorperc','Rassocperc','Lassocperc','Rlimbicperc','Llimbicperc');
 for s = 1:length(subFolders)
-    fprintf(fid, '%s\t%f\t%f\t%f\t%f\n', VATsubjids{s,1},VATstatsall(s,1),VATstatsall(s,2),VATstatsall(s,3),VATstatsall(s,4),VATstatsall(s,5),VATstatsall(s,6));
+    fprintf(fid, '%s\t%f\t%f\t%f\t%f\t%f\t%f\n', VATsubjids{s,1},VATstatsall(s,1),VATstatsall(s,2),VATstatsall(s,3),VATstatsall(s,4),VATstatsall(s,5),VATstatsall(s,6));
 end
 fclose(fid)
 
