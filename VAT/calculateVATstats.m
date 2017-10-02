@@ -138,7 +138,7 @@ end
 
 fid = fopen(['VATstats.txt'], 'wt');
 
-fprintf(fid, '%s\t%s\t%s\t%s\t%s\n', 'ID', 'Rmotorperc','Lmotorperc','Rassocperc','Lassocperc');
+fprintf(fid, '%s\t%s\t%s\t%s\t%s\n', 'ID', 'Rmotorperc','Lmotorperc','Rassocperc','Lassocperc','Rlimbicperc','Llimbicperc');
 for s = 1:length(subFolders)
     fprintf(fid, '%s\t%f\t%f\t%f\t%f\n', VATsubjids{s,1},VATstatsall(s,1),VATstatsall(s,2),VATstatsall(s,3),VATstatsall(s,4),VATstatsall(s,5),VATstatsall(s,6));
 end
