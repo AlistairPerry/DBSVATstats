@@ -102,8 +102,32 @@ for s = 1:length(subFolders)
         Lassocperc=[length(Lassocoverlap)./length(STNassocLvoxs)]*100;
     end
     
+    %Right Limbic
+    
+    cors=ismember(r1,STNlimbicRvoxs);
+
+    if isempty(cors)
+    Rlimbicoverlap=0;
+    Rlimbicperc=0;
+    else
+    Rlimbicoverlap=find(cors==1);
+    Rlimbicperc=[length(Rlimbicoverlap)./length(STNlimbicRvoxs)]*100;
+    end
+
+    %Left Limbic
+
+    cors=ismember(l1,STNlimbicLvoxs);
+
+    if isempty(cors)
+    Llimbicoverlap=0;
+    Llimbicperc=0;
+    else
+    Llimbicoverlap=find(cors==1);
+    Llimbicperc=[length(Llimbicoverlap)./length(STNlimbicLvoxs)]*100;
+    end
+    
 %Combine individual VAT stats into single matrix    
-VATindivstats=cat(2, Rmotorperc, Lmotorperc, Rassocperc, Lassocperc);
+VATindivstats=cat(2, Rmotorperc, Lmotorperc, Rassocperc, Lassocperc,Rlimbicperc,Llimbicperc);
 
 %And then full subject matrix
 VATstatsall(s,:)=VATindivstats;
@@ -116,7 +140,7 @@ fid = fopen(['VATstats.txt'], 'wt');
 
 fprintf(fid, '%s\t%s\t%s\t%s\t%s\n', 'ID', 'Rmotorperc','Lmotorperc','Rassocperc','Lassocperc');
 for s = 1:length(subFolders)
-    fprintf(fid, '%s\t%f\t%f\t%f\t%f\n', VATsubjids{s,1},VATstatsall(s,1),VATstatsall(s,2),VATstatsall(s,3),VATstatsall(s,4));
+    fprintf(fid, '%s\t%f\t%f\t%f\t%f\n', VATsubjids{s,1},VATstatsall(s,1),VATstatsall(s,2),VATstatsall(s,3),VATstatsall(s,4),VATstatsall(s,5),VATstatsall(s,6));
 end
 fclose(fid)
 
