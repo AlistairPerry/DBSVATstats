@@ -13,7 +13,21 @@ setwd("/Users/philipm/Dropbox/Philip/Professional/Statistical Analyses Parkinson
 
 Imputed<-read.csv("stacked_long_unified_with_cart_imputation.csv")
 
+#and anatomical
+anatomical<-read_excel("Anatomical_Longitudinal.xlsx")
+anatomical<-anatomical[!is.na(anatomical$ID),]
+names(anatomical)<-make.names(names(anatomical))
+names(anatomical)[2]<-"Signif.Psych"
+anatomical$Signif.Psych<-factor(anatomical$Signif.Psych,labels=c(FALSE,TRUE))
+anatomical<-anatomical[order(anatomical$ID),]
 
+#Remove ID 33 as this patient has no anatomical data (no MRI due to pacemaker in situ)
+Imputed<-Imputed[Imputed$ID!=33,]
+anatomical<-anatomical[anatomical$ID!=33,]
+
+#Remove ID 03 as this patient has misplaced leads
+Imputed<-Imputed[Imputed$ID!=3,]
+anatomical<-anatomical[anatomical$ID!=3,]
 
 ### CAREGIVER EQ ###
 
@@ -28,22 +42,25 @@ CarerEQ_wide<-reshape(CarerEQ, idvar = "ID", timevar = "TimepointNum", direction
 
 #Create difference matrix and z-score matrix
 
-diff.matrix<-CarerEQ_wide[,3:6]-CarerEQ_wide[,2]
-z.matrix<-data.frame(scale(diff.matrix[,1:4], center = TRUE, scale = TRUE))
+CarerEQ<-CarerEQ_wide[,2:6]
+CarerEQsc<-CarerEQ
+CarerEQsc[,1]<-scale(CarerEQ[,1], center = TRUE, scale = TRUE)
+CarerEQsc[,2]<-scale(CarerEQ[,2], center = TRUE, scale = TRUE)
+CarerEQsc[,3]<-scale(CarerEQ[,3], center = TRUE, scale = TRUE)
+CarerEQsc[,4]<-scale(CarerEQ[,4], center = TRUE, scale = TRUE)
+CarerEQsc[,5]<-scale(CarerEQ[,5], center = TRUE, scale = TRUE)
+
+diff.matrix<-CarerEQsc[,2:5]-CarerEQsc[,1]
 
 #Calculate minimum and maximum differences and absolute values
 
 mins.and.maxes<-data.frame(CarerEQ_wide,PreDBS[,c("ID","Age", "ClinicalSubtype", "TremorAkinesiaSubtype")],
     anatomical[,c("ID","Signif.Psych")],
     min.diffs=apply(diff.matrix,1,min,na.rm=T),
-    max.diffs=apply(diff.matrix,1,max,na.rm=T),
-    min.z=apply(z.matrix,1,min,na.rm=T),
-    max.z=apply(z.matrix,1,max,na.rm=T))
+    max.diffs=apply(diff.matrix,1,max,na.rm=T)
 
 mins.and.maxes$abs.min.diffs<-abs(mins.and.maxes$min.diffs)
 mins.and.maxes$abs.max.diffs<-abs(mins.and.maxes$max.diffs)
-mins.and.maxes$abs.min.z<-abs(mins.and.maxes$min.z)
-mins.and.maxes$abs.max.z<-abs(mins.and.maxes$max.z)
 
 #Calculate the measurement furthest from zero
 
@@ -52,22 +69,12 @@ mins.and.maxes$closest.to.zero<-apply(mins.and.maxes[,c("abs.min.diffs","abs.max
 mins.and.maxes$closest.to.zero.min<-mins.and.maxes$closest.to.zero==mins.and.maxes$abs.min.diffs
 mins.and.maxes$closest.to.zero.max<-mins.and.maxes$closest.to.zero==mins.and.maxes$abs.max.diffs
 
-mins.and.maxes$closest.to.zero.z<-apply(mins.and.maxes[,c("abs.min.z","abs.max.z")],
-1, max)
-mins.and.maxes$closest.to.zero.z.min<-mins.and.maxes$closest.to.zero.z==mins.and.maxes$abs.min.z
-mins.and.maxes$closest.to.zero.z.max<-mins.and.maxes$closest.to.zero.z==mins.and.maxes$abs.max.z
-
 #If there is equal change in positive and negative direction, code this as zero, otherwise take the largest difference from baseline as the derived variable
 
 mins.and.maxes$max.dist.from.zero<-ifelse(mins.and.maxes$abs.min.diffs==mins.and.maxes$abs.max.diffs,
 0,mins.and.maxes$max.dist.from.zero<-ifelse(mins.and.maxes$closest.to.zero.max,
 mins.and.maxes$max.diffs,
 mins.and.maxes$min.diffs))
-
-mins.and.maxes$max.dist.from.zero.z<-ifelse(mins.and.maxes$abs.min.z==mins.and.maxes$abs.max.z,
-0,mins.and.maxes$max.dist.from.zero.z<-ifelse(mins.and.maxes$closest.to.zero.z.max,
-mins.and.maxes$max.z,
-mins.and.maxes$min.z))
 
 #Plot the largest decrease in EQ and perform one-way test for differences between caseness
 
@@ -80,20 +87,6 @@ print(EQ_MaxImpairmentPlot)
 ggsave("CaregiverEQ_MaxDecrease.png", plot = EQ_MaxImpairmentPlot)
 
 MaxChange<-oneway_test(min.diffs~Signif.Psych, data=mins.and.maxes,
-distribution=approximate(B=9999))
-print(MaxChange)
-
-#Plot the most negative z-score and perform one-way test for differences between caseness
-
-EQ_Lowest.z<-ggplot(mins.and.maxes, aes(x=min.z, color=Signif.Psych)) +
-labs(x="Lowest z-score for Caregiver EQ", y="density") +
-geom_density(alpha = .3) +
-theme_bw(base_size = 15)
-
-print(EQ_Lowest.z)
-ggsave("CaregiverEQ_Lowest.z.png", plot = EQ_Lowest.z)
-
-MaxChange<-oneway_test(min.z~Signif.Psych, data=mins.and.maxes,
 distribution=approximate(B=9999))
 print(MaxChange)
 
@@ -118,7 +111,7 @@ print(EffectSize)
 
 #Create a data frame with derived variables
 
-Caregiver_EQ<-data.frame("ID" = mins.and.maxes$ID, "CaregiverEQ_MaxDecrease" = mins.and.maxes$min.diffs, "CaregiverEQ_EffectSize" = mins.and.maxes$CaregiverEQ_EffectSize, "CaregiverEQ_Lowest.z" = mins.and.maxes$min.z)
+Caregiver_EQ<-data.frame("ID" = mins.and.maxes$ID, "CaregiverEQ_MaxDecrease" = mins.and.maxes$min.diffs, "CaregiverEQ_EffectSize" = mins.and.maxes$CaregiverEQ_EffectSize)
 
 
 
@@ -135,22 +128,25 @@ drop = c("ClinicalSubtype", "TremorAkinesiaSubtype", "Gender", "Signif.Psych", "
 
 #Create difference matrix and z-score matrix
 
-diff.matrix<-Hayling_wide[,3:6]-Hayling_wide[,2]
-z.matrix<-data.frame(scale(diff.matrix[,1:4], center = TRUE, scale = TRUE))
+Hayling<-Hayling_wide[,2:6]
+Haylingsc<-Hayling
+Haylingsc[,1]<-scale(Hayling[,1], center = TRUE, scale = TRUE)
+Haylingsc[,2]<-scale(Hayling[,2], center = TRUE, scale = TRUE)
+Haylingsc[,3]<-scale(Hayling[,3], center = TRUE, scale = TRUE)
+Haylingsc[,4]<-scale(Hayling[,4], center = TRUE, scale = TRUE)
+Haylingsc[,5]<-scale(Hayling[,5], center = TRUE, scale = TRUE)
+
+diff.matrix<-Haylingsc[,2:5]-Haylingsc[,1]
 
 #Calculate minimum and maximum differences and absolute values
 
 mins.and.maxes<-data.frame(Hayling_wide,PreDBS[,c("ID","Age", "ClinicalSubtype", "TremorAkinesiaSubtype")],
 anatomical[,c("ID","Signif.Psych")],
 min.diffs=apply(diff.matrix,1,min,na.rm=T),
-max.diffs=apply(diff.matrix,1,max,na.rm=T),
-min.z=apply(z.matrix,1,min,na.rm=T),
-max.z=apply(z.matrix,1,max,na.rm=T))
+max.diffs=apply(diff.matrix,1,max,na.rm=T)
 
 mins.and.maxes$abs.min.diffs<-abs(mins.and.maxes$min.diffs)
 mins.and.maxes$abs.max.diffs<-abs(mins.and.maxes$max.diffs)
-mins.and.maxes$abs.min.z<-abs(mins.and.maxes$min.z)
-mins.and.maxes$abs.max.z<-abs(mins.and.maxes$max.z)
 
 #Calculate the measurement furthest from zero
 
@@ -159,22 +155,12 @@ mins.and.maxes$closest.to.zero<-apply(mins.and.maxes[,c("abs.min.diffs","abs.max
 mins.and.maxes$closest.to.zero.min<-mins.and.maxes$closest.to.zero==mins.and.maxes$abs.min.diffs
 mins.and.maxes$closest.to.zero.max<-mins.and.maxes$closest.to.zero==mins.and.maxes$abs.max.diffs
 
-mins.and.maxes$closest.to.zero.z<-apply(mins.and.maxes[,c("abs.min.z","abs.max.z")],
-1, max)
-mins.and.maxes$closest.to.zero.z.min<-mins.and.maxes$closest.to.zero.z==mins.and.maxes$abs.min.z
-mins.and.maxes$closest.to.zero.z.max<-mins.and.maxes$closest.to.zero.z==mins.and.maxes$abs.max.z
-
 #If there is equal change in positive and negative direction, code this as zero, otherwise take the largest difference from baseline as the derived variable
 
 mins.and.maxes$max.dist.from.zero<-ifelse(mins.and.maxes$abs.min.diffs==mins.and.maxes$abs.max.diffs,
 0,mins.and.maxes$max.dist.from.zero<-ifelse(mins.and.maxes$closest.to.zero.max,
 mins.and.maxes$max.diffs,
 mins.and.maxes$min.diffs))
-
-mins.and.maxes$max.dist.from.zero.z<-ifelse(mins.and.maxes$abs.min.z==mins.and.maxes$abs.max.z,
-0,mins.and.maxes$max.dist.from.zero.z<-ifelse(mins.and.maxes$closest.to.zero.z.max,
-mins.and.maxes$max.z,
-mins.and.maxes$min.z))
 
 #Plot the largest increase in Hayling and perform one-way test for differences between caseness
 
@@ -187,20 +173,6 @@ print(Hayling_MaxImpairmentPlot)
 ggsave("Hayling_MaxIncrease.png", plot = Hayling_MaxImpairmentPlot)
 
 MaxChange<-oneway_test(max.diffs~Signif.Psych, data=mins.and.maxes,
-distribution=approximate(B=9999))
-print(MaxChange)
-
-#Plot the most positive z-score and perform one-way test for differences between caseness
-
-Hayling_Largest.z<-ggplot(mins.and.maxes, aes(x=max.z, color=Signif.Psych)) +
-labs(x="Largest z-score for Hayling Error Score", y="density") +
-geom_density(alpha = .3) +
-theme_bw(base_size = 15)
-
-print(Hayling_Largest.z)
-ggsave("Hayling_Largest.z.png", plot = Hayling_Largest.z)
-
-MaxChange<-oneway_test(max.z~Signif.Psych, data=mins.and.maxes,
 distribution=approximate(B=9999))
 print(MaxChange)
 
@@ -225,7 +197,7 @@ print(EffectSize)
 
 #Create a data frame with derived variables
 
-Hayling_ABErrorScore<-data.frame("ID" = mins.and.maxes$ID, "Hayling_MaxIncrease" = mins.and.maxes$max.diffs, "Hayling_EffectSize" = mins.and.maxes$Hayling_EffectSize, "Hayling_Highest.z" = mins.and.maxes$max.z)
+Hayling_ABErrorScore<-data.frame("ID" = mins.and.maxes$ID, "Hayling_MaxIncrease" = mins.and.maxes$max.diffs, "Hayling_EffectSize" = mins.and.maxes$Hayling_EffectSize)
 
 
 
@@ -240,24 +212,27 @@ ELF<-Imputed[,c("ID","TimepointNum",
 ELF_wide<-reshape(ELF, idvar = "ID", timevar = "TimepointNum", direction = "wide",
 drop = c("ClinicalSubtype", "TremorAkinesiaSubtype", "Gender", "Signif.Psych", "Signif.Psych.CaseYN"))
 
-#Create difference matrix and z score matrix
+#Create difference matrix and z-score matrix
 
-diff.matrix<-ELF_wide[,3:6]-ELF_wide[,2]
-z.matrix<-data.frame(scale(diff.matrix[,1:4], center = TRUE, scale = TRUE))
+ELF<-ELF_wide[,2:6]
+ELFsc<-ELF
+ELFsc[,1]<-scale(ELF[,1], center = TRUE, scale = TRUE)
+ELFsc[,2]<-scale(ELF[,2], center = TRUE, scale = TRUE)
+ELFsc[,3]<-scale(ELF[,3], center = TRUE, scale = TRUE)
+ELFsc[,4]<-scale(ELF[,4], center = TRUE, scale = TRUE)
+ELFsc[,5]<-scale(ELF[,5], center = TRUE, scale = TRUE)
+
+diff.matrix<-ELFsc[,2:5]-ELFsc[,1]
 
 #Calculate minimum and maximum differences and absolute values
 
 mins.and.maxes<-data.frame(ELF_wide,PreDBS[,c("ID","Age", "ClinicalSubtype", "TremorAkinesiaSubtype")],
 anatomical[,c("ID","Signif.Psych")],
 min.diffs=apply(diff.matrix,1,min,na.rm=T),
-max.diffs=apply(diff.matrix,1,max,na.rm=T),
-min.z=apply(z.matrix,1,min,na.rm=T),
-max.z=apply(z.matrix,1,max,na.rm=T))
+max.diffs=apply(diff.matrix,1,max,na.rm=T)
 
 mins.and.maxes$abs.min.diffs<-abs(mins.and.maxes$min.diffs)
 mins.and.maxes$abs.max.diffs<-abs(mins.and.maxes$max.diffs)
-mins.and.maxes$abs.min.z<-abs(mins.and.maxes$min.z)
-mins.and.maxes$abs.max.z<-abs(mins.and.maxes$max.z)
 
 #Calculate the measurement furthest from zero
 
@@ -266,22 +241,12 @@ mins.and.maxes$closest.to.zero<-apply(mins.and.maxes[,c("abs.min.diffs","abs.max
 mins.and.maxes$closest.to.zero.min<-mins.and.maxes$closest.to.zero==mins.and.maxes$abs.min.diffs
 mins.and.maxes$closest.to.zero.max<-mins.and.maxes$closest.to.zero==mins.and.maxes$abs.max.diffs
 
-mins.and.maxes$closest.to.zero.z<-apply(mins.and.maxes[,c("abs.min.z","abs.max.z")],
-1, max)
-mins.and.maxes$closest.to.zero.z.min<-mins.and.maxes$closest.to.zero.z==mins.and.maxes$abs.min.z
-mins.and.maxes$closest.to.zero.z.max<-mins.and.maxes$closest.to.zero.z==mins.and.maxes$abs.max.z
-
 #If there is equal change in positive and negative direction, code this as zero, otherwise take the largest difference from baseline as the derived variable
 
 mins.and.maxes$max.dist.from.zero<-ifelse(mins.and.maxes$abs.min.diffs==mins.and.maxes$abs.max.diffs,
 0,mins.and.maxes$max.dist.from.zero<-ifelse(mins.and.maxes$closest.to.zero.max,
 mins.and.maxes$max.diffs,
 mins.and.maxes$min.diffs))
-
-mins.and.maxes$max.dist.from.zero.z<-ifelse(mins.and.maxes$abs.min.z==mins.and.maxes$abs.max.z,
-0,mins.and.maxes$max.dist.from.zero.z<-ifelse(mins.and.maxes$closest.to.zero.z.max,
-mins.and.maxes$max.z,
-mins.and.maxes$min.z))
 
 #Plot the largest increase in ELF and perform one-way test for differences between caseness
 
@@ -294,20 +259,6 @@ print(ELF_MaxImpairmentPlot)
 ggsave("ELF_MaxIncrease.png", plot = ELF_MaxImpairmentPlot)
 
 MaxChange<-oneway_test(max.diffs~Signif.Psych, data=mins.and.maxes,
-distribution=approximate(B=9999))
-print(MaxChange)
-
-#Plot the most positive z-score and perform one-way test for differences between caseness
-
-ELF_Largest.z<-ggplot(mins.and.maxes, aes(x=max.z, color=Signif.Psych)) +
-labs(x="Largest z-score for ELF", y="density") +
-geom_density(alpha = .3) +
-theme_bw(base_size = 15)
-
-print(ELF_Largest.z)
-ggsave("ELF_Largest.z.png", plot = ELF_Largest.z)
-
-MaxChange<-oneway_test(max.z~Signif.Psych, data=mins.and.maxes,
 distribution=approximate(B=9999))
 print(MaxChange)
 
@@ -332,7 +283,7 @@ print(EffectSize)
 
 #Create a data frame with derived variables
 
-ELF_RuleViolations<-data.frame("ID" = mins.and.maxes$ID, "ELF_MaxIncrease" = mins.and.maxes$max.diffs, "ELF_EffectSize" = mins.and.maxes$ELF_EffectSize, "ELF_Highest.z" = mins.and.maxes$max.z)
+ELF_RuleViolations<-data.frame("ID" = mins.and.maxes$ID, "ELF_MaxIncrease" = mins.and.maxes$max.diffs, "ELF_EffectSize" = mins.and.maxes$ELF_EffectSize)
 
 
 
@@ -341,31 +292,34 @@ ELF_RuleViolations<-data.frame("ID" = mins.and.maxes$ID, "ELF_MaxIncrease" = min
 
 
 
-BIS<-Imputed[,c("ID","TimepointNum",
-"ClinicalSubtype", "TremorAkinesiaSubtype", "Gender", "Signif.Psych",
+CarerBIS<-Imputed[,c("ID","TimepointNum",
+"ClinicalSubtype", "TremorAkinesiaSubtype", "Gender", "Age", "Signif.Psych",
 "Signif.Psych.CaseYN", "CarerBIS_Total")]
 
-BIS_wide<-reshape(BIS, idvar = "ID", timevar = "TimepointNum", direction = "wide",
-drop = c("ClinicalSubtype", "TremorAkinesiaSubtype", "Gender", "Signif.Psych", "Signif.Psych.CaseYN"))
+CarerBIS_wide<-reshape(CarerBIS, idvar = "ID", timevar = "TimepointNum", direction = "wide",
+drop = c("ClinicalSubtype", "TremorAkinesiaSubtype", "Gender", "Age", "Signif.Psych", "Signif.Psych.CaseYN"))
 
-#Create difference matrix and z score matrix
+#Create difference matrix and z-score matrix
 
-diff.matrix<-BIS_wide[,3:6]-BIS_wide[,2]
-z.matrix<-data.frame(scale(diff.matrix[,1:4], center = TRUE, scale = TRUE))
+CBIS<-CarerBIS_wide[,2:6]
+CBISsc<-CBIS
+CBISsc[,1]<-scale(CBIS[,1], center = TRUE, scale = TRUE)
+CBISsc[,2]<-scale(CBIS[,2], center = TRUE, scale = TRUE)
+CBISsc[,3]<-scale(CBIS[,3], center = TRUE, scale = TRUE)
+CBISsc[,4]<-scale(CBIS[,4], center = TRUE, scale = TRUE)
+CBISsc[,5]<-scale(CBIS[,5], center = TRUE, scale = TRUE)
+
+diff.matrix<-CBISsc[,2:5]-CBISsc[,1]
 
 #Calculate minimum and maximum differences and absolute values
 
 mins.and.maxes<-data.frame(BIS_wide,PreDBS[,c("ID","Age", "ClinicalSubtype", "TremorAkinesiaSubtype")],
 anatomical[,c("ID","Signif.Psych")],
 min.diffs=apply(diff.matrix,1,min,na.rm=T),
-max.diffs=apply(diff.matrix,1,max,na.rm=T),
-min.z=apply(z.matrix,1,min,na.rm=T),
-max.z=apply(z.matrix,1,max,na.rm=T))
+max.diffs=apply(diff.matrix,1,max,na.rm=T)
 
 mins.and.maxes$abs.min.diffs<-abs(mins.and.maxes$min.diffs)
 mins.and.maxes$abs.max.diffs<-abs(mins.and.maxes$max.diffs)
-mins.and.maxes$abs.min.z<-abs(mins.and.maxes$min.z)
-mins.and.maxes$abs.max.z<-abs(mins.and.maxes$max.z)
 
 #Calculate the measurement furthest from zero
 
@@ -374,11 +328,6 @@ mins.and.maxes$closest.to.zero<-apply(mins.and.maxes[,c("abs.min.diffs","abs.max
 mins.and.maxes$closest.to.zero.min<-mins.and.maxes$closest.to.zero==mins.and.maxes$abs.min.diffs
 mins.and.maxes$closest.to.zero.max<-mins.and.maxes$closest.to.zero==mins.and.maxes$abs.max.diffs
 
-mins.and.maxes$closest.to.zero.z<-apply(mins.and.maxes[,c("abs.min.z","abs.max.z")],
-1, max)
-mins.and.maxes$closest.to.zero.z.min<-mins.and.maxes$closest.to.zero.z==mins.and.maxes$abs.min.z
-mins.and.maxes$closest.to.zero.z.max<-mins.and.maxes$closest.to.zero.z==mins.and.maxes$abs.max.z
-
 #If there is equal change in positive and negative direction, code this as zero, otherwise take the largest difference from baseline as the derived variable
 
 mins.and.maxes$max.dist.from.zero<-ifelse(mins.and.maxes$abs.min.diffs==mins.and.maxes$abs.max.diffs,
@@ -386,36 +335,17 @@ mins.and.maxes$max.dist.from.zero<-ifelse(mins.and.maxes$abs.min.diffs==mins.and
 mins.and.maxes$max.diffs,
 mins.and.maxes$min.diffs))
 
-mins.and.maxes$max.dist.from.zero.z<-ifelse(mins.and.maxes$abs.min.z==mins.and.maxes$abs.max.z,
-0,mins.and.maxes$max.dist.from.zero.z<-ifelse(mins.and.maxes$closest.to.zero.z.max,
-mins.and.maxes$max.z,
-mins.and.maxes$min.z))
-
 #Plot the largest increase in ELF and perform one-way test for differences between caseness
 
-BIS_MaxImpairmentPlot<-ggplot(mins.and.maxes, aes(x=max.diffs, color=Signif.Psych)) +
+CarerBIS_MaxImpairmentPlot<-ggplot(mins.and.maxes, aes(x=max.diffs, color=Signif.Psych)) +
 labs(x="Max Increase in Caregiver BIS", y="density") +
 geom_density(alpha = .3) +
 theme_bw(base_size = 15)
 
-print(BIS_MaxImpairmentPlot)
-ggsave("BIS_MaxIncrease.png", plot = BIS_MaxImpairmentPlot)
+print(CarerBIS_MaxImpairmentPlot)
+ggsave("CarerBIS_MaxIncrease.png", plot = CarerBIS_MaxImpairmentPlot)
 
 MaxChange<-oneway_test(max.diffs~Signif.Psych, data=mins.and.maxes,
-distribution=approximate(B=9999))
-print(MaxChange)
-
-#Plot the most positive z-score and perform one-way test for differences between caseness
-
-BIS_Largest.z<-ggplot(mins.and.maxes, aes(x=max.z, color=Signif.Psych)) +
-labs(x="Largest z-score for Caregiver BIS", y="density") +
-geom_density(alpha = .3) +
-theme_bw(base_size = 15)
-
-print(BIS_Largest.z)
-ggsave("BIS_Largest.z.png", plot = BIS_Largest.z)
-
-MaxChange<-oneway_test(max.z~Signif.Psych, data=mins.and.maxes,
 distribution=approximate(B=9999))
 print(MaxChange)
 
@@ -424,23 +354,23 @@ print(MaxChange)
 mins.and.maxes$standard.deviation<-apply(mins.and.maxes[,c(2:6)],
 1, sd, na.rm=T)
 
-mins.and.maxes$BIS_EffectSize<-mins.and.maxes$max.diffs/mins.and.maxes$standard.deviation
+mins.and.maxes$CarerBIS_EffectSize<-mins.and.maxes$max.diffs/mins.and.maxes$standard.deviation
 
-BIS_EffectSizePlot<-ggplot(mins.and.maxes, aes(x=BIS_EffectSize, color=Signif.Psych)) +
+CarerBIS_EffectSizePlot<-ggplot(mins.and.maxes, aes(x=CarerBIS_EffectSize, color=Signif.Psych)) +
 labs(x="Caregiver BIS Effect Size", y="density") +
 geom_density(alpha = .3) +
 theme_bw(base_size = 15)
 
-print(BIS_EffectSizePlot)
-ggsave("BIS_EffectSize.png", plot = BIS_EffectSizePlot)
+print(CarerBIS_EffectSizePlot)
+ggsave("CarerBIS_EffectSize.png", plot = CarerBIS_EffectSizePlot)
 
-EffectSize<-oneway_test(BIS_EffectSize~Signif.Psych, data=mins.and.maxes,
+EffectSize<-oneway_test(CarerBIS_EffectSize~Signif.Psych, data=mins.and.maxes,
 distribution=approximate(B=9999))
 print(EffectSize)
 
 #Create a data frame with derived variables
 
-CaregiverBIS<-data.frame("ID" = mins.and.maxes$ID, "CaregiverBIS_MaxIncrease" = mins.and.maxes$max.diffs, "CaregiverBIS_EffectSize" = mins.and.maxes$BIS_EffectSize, "CaregiverBIS_Highest.z" = mins.and.maxes$max.z)
+CaregiverBIS<-data.frame("ID" = mins.and.maxes$ID, "CaregiverBIS_MaxIncrease" = mins.and.maxes$max.diffs, "CaregiverBIS_EffectSize" = mins.and.maxes$CarerBIS_EffectSize)
 
 
 
@@ -448,31 +378,34 @@ CaregiverBIS<-data.frame("ID" = mins.and.maxes$ID, "CaregiverBIS_MaxIncrease" = 
 
 
 
-Motor<-Imputed[,c("ID","TimepointNum",
-"ClinicalSubtype", "TremorAkinesiaSubtype", "Gender", "Signif.Psych",
+UPDRS<-Imputed[,c("ID","TimepointNum",
+"ClinicalSubtype", "TremorAkinesiaSubtype", "Gender", "Age", "Signif.Psych",
 "Signif.Psych.CaseYN", "UPDRS_Total")]
 
-Motor_wide<-reshape(Motor, idvar = "ID", timevar = "TimepointNum", direction = "wide",
-drop = c("ClinicalSubtype", "TremorAkinesiaSubtype", "Gender", "Signif.Psych", "Signif.Psych.CaseYN"))
+UPDRS_wide<-reshape(UPDRS, idvar = "ID", timevar = "TimepointNum", direction = "wide",
+drop = c("ClinicalSubtype", "TremorAkinesiaSubtype", "Gender", "Age", "Signif.Psych", "Signif.Psych.CaseYN"))
 
 #Create difference matrix and z-score matrix
 
-diff.matrix<-Motor_wide[,3:6]-Motor_wide[,2]
-z.matrix<-data.frame(scale(diff.matrix[,1:4], center = TRUE, scale = TRUE))
+UPDRS<-UPDRS_wide[,2:6]
+UPDRSsc<-UPDRS
+UPDRSsc[,1]<-scale(UPDRS[,1], center = TRUE, scale = TRUE)
+UPDRSsc[,2]<-scale(UPDRS[,2], center = TRUE, scale = TRUE)
+UPDRSsc[,3]<-scale(UPDRS[,3], center = TRUE, scale = TRUE)
+UPDRSsc[,4]<-scale(UPDRS[,4], center = TRUE, scale = TRUE)
+UPDRSsc[,5]<-scale(UPDRS[,5], center = TRUE, scale = TRUE)
+
+diff.matrix.UPDRS<-UPDRSsc[,2:5]-UPDRSsc[,1]
 
 #Calculate minimum and maximum differences and absolute values
 
 mins.and.maxes<-data.frame(Motor_wide,PreDBS[,c("ID","Age", "ClinicalSubtype", "TremorAkinesiaSubtype")],
 anatomical[,c("ID","Signif.Psych")],
 min.diffs=apply(diff.matrix,1,min,na.rm=T),
-max.diffs=apply(diff.matrix,1,max,na.rm=T),
-min.z=apply(z.matrix,1,min,na.rm=T),
-max.z=apply(z.matrix,1,max,na.rm=T))
+max.diffs=apply(diff.matrix,1,max,na.rm=T)
 
 mins.and.maxes$abs.min.diffs<-abs(mins.and.maxes$min.diffs)
 mins.and.maxes$abs.max.diffs<-abs(mins.and.maxes$max.diffs)
-mins.and.maxes$abs.min.z<-abs(mins.and.maxes$min.z)
-mins.and.maxes$abs.max.z<-abs(mins.and.maxes$max.z)
 
 #Calculate the measurement furthest from zero
 
@@ -481,22 +414,12 @@ mins.and.maxes$closest.to.zero<-apply(mins.and.maxes[,c("abs.min.diffs","abs.max
 mins.and.maxes$closest.to.zero.min<-mins.and.maxes$closest.to.zero==mins.and.maxes$abs.min.diffs
 mins.and.maxes$closest.to.zero.max<-mins.and.maxes$closest.to.zero==mins.and.maxes$abs.max.diffs
 
-mins.and.maxes$closest.to.zero.z<-apply(mins.and.maxes[,c("abs.min.z","abs.max.z")],
-1, max)
-mins.and.maxes$closest.to.zero.z.min<-mins.and.maxes$closest.to.zero.z==mins.and.maxes$abs.min.z
-mins.and.maxes$closest.to.zero.z.max<-mins.and.maxes$closest.to.zero.z==mins.and.maxes$abs.max.z
-
 #If there is equal change in positive and negative direction, code this as zero, otherwise take the largest difference from baseline as the derived variable
 
 mins.and.maxes$max.dist.from.zero<-ifelse(mins.and.maxes$abs.min.diffs==mins.and.maxes$abs.max.diffs,
 0,mins.and.maxes$max.dist.from.zero<-ifelse(mins.and.maxes$closest.to.zero.max,
 mins.and.maxes$max.diffs,
 mins.and.maxes$min.diffs))
-
-mins.and.maxes$max.dist.from.zero.z<-ifelse(mins.and.maxes$abs.min.z==mins.and.maxes$abs.max.z,
-0,mins.and.maxes$max.dist.from.zero.z<-ifelse(mins.and.maxes$closest.to.zero.z.max,
-mins.and.maxes$max.z,
-mins.and.maxes$min.z))
 
 #Plot the largest decrease in UPDRS and perform one-way test for differences between caseness
 
@@ -509,20 +432,6 @@ print(UPDRS_MaxBenefitPlot)
 ggsave("UPDRS_MaxDecrease.png", plot = UPDRS_MaxBenefitPlot)
 
 MaxChange<-oneway_test(min.diffs~Signif.Psych, data=mins.and.maxes,
-distribution=approximate(B=9999))
-print(MaxChange)
-
-#Plot the most negative z-score and perform one-way test for differences between caseness
-
-UPDRS_Lowest.z<-ggplot(mins.and.maxes, aes(x=min.z, color=Signif.Psych)) +
-labs(x="Lowest z-score for UPDRS", y="density") +
-geom_density(alpha = .3) +
-theme_bw(base_size = 15)
-
-print(UPDRS_Lowest.z)
-ggsave("UPDRS_Lowest.z.png", plot = UPDRS_Lowest.z)
-
-MaxChange<-oneway_test(min.z~Signif.Psych, data=mins.and.maxes,
 distribution=approximate(B=9999))
 print(MaxChange)
 
@@ -547,7 +456,7 @@ print(EffectSize)
 
 #Create a data frame with derived variables
 
-UPDRS<-data.frame("ID" = mins.and.maxes$ID, "UPDRS_MaxDecrease" = mins.and.maxes$min.diffs, "UPDRS_EffectSize" = mins.and.maxes$UPDRS_EffectSize, "UPDRS_Lowest.z" = mins.and.maxes$min.z)
+UPDRS<-data.frame("ID" = mins.and.maxes$ID, "UPDRS_MaxDecrease" = mins.and.maxes$min.diffs, "UPDRS_EffectSize" = mins.and.maxes$UPDRS_EffectSize)
 
 
 
