@@ -59,7 +59,7 @@ CarerEQsc[,3]<-scale(CarerEQ[,3], center = TRUE, scale = TRUE)
 CarerEQsc[,4]<-scale(CarerEQ[,4], center = TRUE, scale = TRUE)
 CarerEQsc[,5]<-scale(CarerEQ[,5], center = TRUE, scale = TRUE)
 
-diff.matrix.CarerEQ<-CarerEQsc[,2:4]-CarerEQsc[,1]
+diff.matrix.CarerEQ<-CarerEQsc[,2:5]-CarerEQsc[,1]
 
 #z.matrix<-data.frame(scale(diff.matrix[,1:4], center = TRUE, scale = TRUE))
 
