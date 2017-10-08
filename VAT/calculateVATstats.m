@@ -31,7 +31,7 @@ subFolders(1:2)=[];
 
 [~,STNlimbicRdata]=read([STNparcdir '/' 'LEAD_DBS_STN_limbic_RIGHT.nii']);
 
-[~,STNlimbicLdata]=read([STNparcdir '/' 'LEAD_DBS_STN_limbic_RIGHT.nii']);
+[~,STNlimbicLdata]=read([STNparcdir '/' 'LEAD_DBS_STN_limbic_LEFT.nii']);
 
 
 %extract their voxels
