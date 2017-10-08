@@ -26,7 +26,7 @@ for s = 1:length(subFolders)
     matlabbatchleft{1}.spm.spatial.coreg.write.roptions.interp = 0;
     matlabbatchleft{1}.spm.spatial.coreg.write.roptions.wrap = [0 0 0];
     matlabbatchleft{1}.spm.spatial.coreg.write.roptions.mask = 0;
-    matlabbatchleft{1}.spm.spatial.coreg.write.roptions.prefix = 'a';
+    matlabbatchleft{1}.spm.spatial.coreg.write.roptions.prefix = 'r';
     
     spm_jobman('run',matlabbatchleft);
     
@@ -38,7 +38,7 @@ for s = 1:length(subFolders)
     matlabbatchright{1}.spm.spatial.coreg.write.roptions.interp = 0;
     matlabbatchright{1}.spm.spatial.coreg.write.roptions.wrap = [0 0 0];
     matlabbatchright{1}.spm.spatial.coreg.write.roptions.mask = 0;
-    matlabbatchright{1}.spm.spatial.coreg.write.roptions.prefix = 'a';
+    matlabbatchright{1}.spm.spatial.coreg.write.roptions.prefix = 'r';
     
     spm_jobman('run',matlabbatchright);
     
