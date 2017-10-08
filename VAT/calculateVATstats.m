@@ -1,4 +1,4 @@
-function [VATstatsall] = calculateVATstats(STNparcdir,output)
+function [VATstatsall] = calculateVATstats(STNparcdir,outputfile)
 %UNTITLED Summary of this function goes here
 %   Detailed explanation goes here
 
@@ -58,10 +58,10 @@ for s = 1:length(subFolders)
     %remove LEAD_DBS from ID strings
     VATsubjids{s,1} = currentSubj(10:end);
     
-    SubjRVATfile=[currentSubjDir '/' 'aLEAD_DBS_VAT_RIGHT.nii'];
+    SubjRVATfile=[currentSubjDir '/' 'rLEAD_DBS_VAT_RIGHT.nii'];
     [RVAThdr,RVATdata]=read(SubjRVATfile);
     
-    SubjLVATfile=[currentSubjDir '/' 'aLEAD_DBS_VAT_LEFT.nii'];
+    SubjLVATfile=[currentSubjDir '/' 'rLEAD_DBS_VAT_LEFT.nii'];
     [LVAThdr,LVATdata]=read(SubjLVATfile);
     
     %calculate proportion of stimulation field in each STN zone
@@ -150,7 +150,7 @@ end
 
 %Now write VAT stats to output matrix
 
-fid = fopen([output '.txt'], 'wt');
+fid = fopen([outputfile], 'wt');
 
 fprintf(fid, '%s\t%s\t%s\t%s\t%s\t%s\t%s\n', 'ID', 'Rmotorperc','Lmotorperc','Rassocperc','Lassocperc','Rlimbicperc','Llimbicperc');
 for s = 1:length(subFolders)

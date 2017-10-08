@@ -15,7 +15,7 @@ subFolders=files(dirFlags);
 subFolders(1:2)=[];
 
 %extract eg size of VAT images
-demoRVATfile=[workingdirectory '/' '002' '/' 'rLEAD_DBS_VAT_RIGHT.nii'];
+demoRVATfile=[workingdirectory '/' 'Lead_DBS_002' '/' 'rLEAD_DBS_VAT_RIGHT.nii'];
 [VAThdr,VATdata]=read(demoRVATfile);
 numvoxels=numel(VATdata);
 
@@ -75,11 +75,23 @@ identmatkeep(:,maxzero)=[];
 
 dlmwrite('VATdatavoxelinfo.txt',identmatkeep,'delimiter','\t');
 
-%now as nii file for visualisationand masking purposes
+%now as nii file for visualisation purposes
 VATdataallvoxels=zeros(size(VATdata));
 VATdataallvoxels(identmatkeep)=1;
 write(VAThdr,VATdataallvoxels,'VATdataallvoxels.nii')
 
-%dlmwrite('VATdataallnew.txt',reshapeVATall,'delimiter','\t');
+%determine most consistent voxels - potentially for fsl randomise masking
+thrperc=0.25;
+thrreq=floor(thrperc*length(subFolders));
+
+sumreshapeVATall=sum(reshapeVATall,1);
+[~,VATabvthrcol]=find(sumreshapeVATall>=thrreq);
+
+identmatkeepabvthr=identmatkeep(VATabvthrcol);
+
+VATdataabvthr=zeros(size(VATdata));
+VATdataabvthr(identmatkeepabvthr)=1;
+write(VAThdr,VATdataabvthr,'VATdataabvthr.nii')
+
 end
 
