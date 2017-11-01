@@ -17,7 +17,7 @@ output: html_document
   #FU4 data csv.csv
 
 #save these somewhere and then change the path below to where you saved them
-setwd("E:/Documents and Settings/Administrator/Desktop/Phil_Mosley/Syntax")
+setwd('Dropbox/Philip/Professional/Statistical Analyses Parkinsons Disease and DBS/Data sets/09 2017 DATA SET/')
 
 #attempt to use read_excel to read in Excel files
 library(readxl)
@@ -27,31 +27,19 @@ library(mice)
 library(VIM)
 
 
-#read them in
-PreDBS<-read.csv("E:/Documents and Settings/Administrator/Desktop/Phil_Mosley/WorkingData/Pre-DBS Data csv.csv")
-
-#I had "Gender" in my models for this covariate from before and so this is a quick fix instead of a fiddly search/replace
+#Read in data, remove extra lines
+PreDBS<-read_excel("Pre-DBS_09_2017.xlsx")
+FU1DBS<-read_excel("FU1_Data_09_2017.xlsx")
+FU2DBS<-read_excel("FU2_Data_09_2017.xlsx")
+FU3DBS<-read_excel("FU3_Data_09_2017.xlsx")
+FU4DBS<-read_excel("FU4_Data_09_2017.xlsx")
 names(PreDBS)[3]<-"Gender"
-
-#this next line and ones like it remove blank lines that Excel sometimes leaves
 PreDBS<-PreDBS[!is.na(PreDBS$ID),]
-
-
-FU1DBS<-data.frame(read.csv("E:/Documents and Settings/Administrator/Desktop/Phil_Mosley/WorkingData/FU1 Data csv.csv"))
-#exclude 19 because 19 has no data anywhere; this was changed in the csv file but not in the excel file
 FU1DBS<-FU1DBS[!is.na(FU1DBS$ID),]
-
-FU2DBS<-data.frame(read.csv("E:/Documents and Settings/Administrator/Desktop/Phil_Mosley/WorkingData/FU2 Data csv.csv"))
 FU2DBS<-FU2DBS[!is.na(FU2DBS$ID),]
-
-FU3DBS<-data.frame(read.csv("E:/Documents and Settings/Administrator/Desktop/Phil_Mosley/WorkingData/FU3 Data csv.csv"))
 FU3DBS<-FU3DBS[!is.na(FU3DBS$ID),]
-
-FU4DBS<-data.frame(read.csv("E:/Documents and Settings/Administrator/Desktop/Phil_Mosley/WorkingData/FU4 Data csv.csv"))
 FU4DBS<-FU4DBS[!is.na(FU4DBS$ID),]
-
-#this may work for you, not sure.  if not, you'll have to export as csv
-anatomical <- read_excel('E:/Documents and Settings/Administrator/Desktop/Phil_Mosley/WorkingData/Anatomical_Data_Normalised_Lead_DBS_v3.xlsx')
+anatomical<-read_excel("Anatomical_Cases.xlsx")
 anatomical<-anatomical[!is.na(anatomical$ID),]
 names(anatomical)<-make.names(names(anatomical))
 names(anatomical)[2]<-"Signif.Psych"
@@ -59,7 +47,6 @@ anatomical$Signif.Psych<-factor(anatomical$Signif.Psych,labels=c(FALSE,TRUE))
 
 #make a new variable for pts with signif psych and merge that onto PreDBS as a covariate
 pts.with.signif.psych<-anatomical[,1:2]
-
 PreDBS<-merge(PreDBS,pts.with.signif.psych, all=T)
 
 #########
@@ -83,7 +70,15 @@ PreDBS<-merge(PreDBS,pts.with.signif.psych, all=T)
 #     # #  ####   ####  # #    #  ####     ######  #    #   #   #    #
 
 
-#take out pt 19: 
+#take out pt 03 as his leads are misplaced:
+PreDBS<-PreDBS[PreDBS$ID!=3,]
+FU1DBS<-FU1DBS[FU1DBS$ID!=3,]
+FU2DBS<-FU2DBS[FU2DBS$ID!=3,]
+FU3DBS<-FU3DBS[FU3DBS$ID!=3,]
+FU4DBS<-FU4DBS[FU4DBS$ID!=3,]
+anatomical<-anatomical[anatomical$ID!=3,]
+
+#take out pt 19 as she withdrew from the study after baseline:
 PreDBS<-PreDBS[PreDBS$ID!=19,]
 FU1DBS<-FU1DBS[FU1DBS$ID!=19,]
 FU2DBS<-FU2DBS[FU2DBS$ID!=19,]
@@ -91,59 +86,51 @@ FU3DBS<-FU3DBS[FU3DBS$ID!=19,]
 FU4DBS<-FU4DBS[FU4DBS$ID!=19,]
 anatomical<-anatomical[anatomical$ID!=19,]
 
-#take out pt 43: 
-#PreDBS<-PreDBS[PreDBS$ID!=43,]  this is okay because it is complete at Pre
-#no data for these two
+#take out pt 33 as he has no anatomical data (had a pacemaker so DBS done using CT images):
+PreDBS<-PreDBS[PreDBS$ID!=33,]
+FU1DBS<-FU1DBS[FU1DBS$ID!=33,]
+FU2DBS<-FU2DBS[FU2DBS$ID!=33,]
+FU3DBS<-FU3DBS[FU3DBS$ID!=33,]
+FU4DBS<-FU4DBS[FU4DBS$ID!=33,]
+anatomical<-anatomical[anatomical$ID!=33,]
+
+#now remove those participants who missed an entire follow up (as data imputation may not be reliable):
+#FU1 Total missing: 43, 62
+#FU2 Total missing: 20, 27, 30, 38, 43, 59
+#FU3 Total missing: 1
+#FU4 Total missing: 43, 51, 59
+
 FU1DBS<-FU1DBS[FU1DBS$ID!=43,]
+FU1DBS<-FU1DBS[FU1DBS$ID!=62,]
+
+FU2DBS<-FU2DBS[FU2DBS$ID!=20,]
+FU2DBS<-FU2DBS[FU2DBS$ID!=27,]
+FU2DBS<-FU2DBS[FU2DBS$ID!=30,]
+FU2DBS<-FU2DBS[FU2DBS$ID!=38,]
 FU2DBS<-FU2DBS[FU2DBS$ID!=43,]
-#data for this one?  Weird
-#FU3DBS<-FU3DBS[FU3DBS$ID!=43,]
+FU2DBS<-FU2DBS[FU2DBS$ID!=59,]
+
+FU3DBS<-FU3DBS[FU3DBS$ID!=1,]
+
 FU4DBS<-FU4DBS[FU4DBS$ID!=43,]
+FU4DBS<-FU4DBS[FU4DBS$ID!=51,]
+FU4DBS<-FU4DBS[FU4DBS$ID!=59,]
 
-
-
-
-#Fill in NAs according to this from Phil:
+#Fill in NAs for data that is missing within an otherwise complete follow up:
 
 #For the other data sets:
-# FU1 - ID 13 (partial - patient data), 14 (partial - partner data) and 43 (total) will remain missing
-# FU2 - ID 20 (total), 27 (total), 30 (total), 36 (partial - partner data) and 38 (total)
-# FU3 - ID 1 (total)
-# FU4 - Hope to get a complete set (excepting 19)
+# Pre-DBS - 62 (partial - depression scale)
+# FU1 - 13 (partial - patient data), 14 (partial - partner data)
+# FU2 - 36 (partial - partner data), 50 (partial - partner data), 51 (partial - partner data), 62 (partial - examination data), 64 (partial - patient data)
+# FU3 - 43 (partial - partner data), 47 (partial - patient data), 60 (partial - partner data)
+# FU4 - 26 (partial - partner data), 60 (partial - partner data)
 
 ###We do it this way because Phil gives pt data in the form of EXcel files.
 ###When an Excel file has an operation on empty, it gives 0.  There are a ton of
 ###zeroes in the Excel files that should be missing.  Since updates come often, 
 ###this is a way to nuke the bad zeroes in one swoop instead of changing them by hand after each update.
 
-FU3DBS[FU3DBS$ID==1,paste("FU3_",c("Apathy_Total",
-                                   "BIS_Total",
-                                   "BIS_Attentional",
-                                   "BIS_Motor",
-                                   "BIS_NonPlanning",
-                                   "EQ_Total",
-                                   "Gambling",
-                                   "Sex",
-                                   "Buying",
-                                   "Eating",
-                                   "Hobbyism.Punding",
-                                   "Medication.Use",
-                                   "ICD.Total",
-                                   "QUIP.Total",
-                                   "BDI_Total",
-                                   "GAI_Total",
-                                   "CarerBIS_Total",
-                                   "CarerBIS_Attentional",
-                                   "CarerBIS_Motor",
-                                   "CarerBIS_NonPlanning",
-                                   "CarerEQ_Total",
-                                   "NPI_Total",
-                                   "ZBI_Total",
-                                   "RQI_Total",
-                                   "UPDRS_Total",
-                                   "MOCA_Total",
-                                    "MMSE_Total",
-                                    "DelayDiscount_K"),sep="")]<-NA
+PreDBS[PreDBS$ID==62,paste("Pre_",c("BDI_Total"),sep="")]<-NA
 
 FU1DBS[FU1DBS$ID==13,paste("FU1_",c("Apathy_Total",
                                     "BIS_Total",
@@ -172,36 +159,6 @@ FU1DBS[FU1DBS$ID==14,paste("FU1_",c("CarerBIS_Total",
                                     "RQI_Total"),sep="")]<-NA
 
 
-FU2DBS[FU2DBS$ID==20,paste("FU2_",c("Apathy_Total",
-                                    "BIS_Total",
-                                    "BIS_Attentional",
-                                    "BIS_Motor",
-                                    "BIS_NonPlanning",
-                                    "EQ_Total",
-                                    "Gambling",
-                                    "Sex",
-                                    "Buying",
-                                    "Eating",
-                                    "Hobbyism.Punding",
-                                    "Medication.Use",
-                                    "ICD.Total",
-                                    "QUIP.Total",
-                                    "BDI_Total",
-                                    "GAI_Total",
-                                    "CarerBIS_Total",
-                                    "CarerBIS_Attentional",
-                                    "CarerBIS_Motor",
-                                    "CarerBIS_NonPlanning",
-                                    "CarerEQ_Total",
-                                    "NPI_Total",
-                                    "ZBI_Total",
-                                    "RQI_Total",
-                                    "UPDRS_Total",
-                                    "MOCA_Total",
-                                    "MMSE_Total",
-                                    "DelayDiscount_K"),sep="")]<-NA
-
-
 FU4DBS[FU4DBS$ID==26,paste("FU4_",c("CarerBIS_Total",
                                     "CarerBIS_Attentional",
                                     "CarerBIS_Motor",
@@ -210,66 +167,6 @@ FU4DBS[FU4DBS$ID==26,paste("FU4_",c("CarerBIS_Total",
                                     "NPI_Total",
                                     "ZBI_Total",
                                     "RQI_Total"),sep="")]<-NA
-
-
-
-FU2DBS[FU2DBS$ID==27,paste("FU2_",c("Apathy_Total",
-                                    "BIS_Total",
-                                    "BIS_Attentional",
-                                    "BIS_Motor",
-                                    "BIS_NonPlanning",
-                                    "EQ_Total",
-                                    "Gambling",
-                                    "Sex",
-                                    "Buying",
-                                    "Eating",
-                                    "Hobbyism.Punding",
-                                    "Medication.Use",
-                                    "ICD.Total",
-                                    "QUIP.Total",
-                                    "BDI_Total",
-                                    "GAI_Total",
-                                    "CarerBIS_Total",
-                                    "CarerBIS_Attentional",
-                                    "CarerBIS_Motor",
-                                    "CarerBIS_NonPlanning",
-                                    "CarerEQ_Total",
-                                    "NPI_Total",
-                                    "ZBI_Total",
-                                    "RQI_Total",
-                                    "UPDRS_Total",
-                                    "MOCA_Total",
-                                    "MMSE_Total",
-                                    "DelayDiscount_K"),sep="")]<-NA
-
-FU2DBS[FU2DBS$ID==30,paste("FU2_",c("Apathy_Total",
-                                    "BIS_Total",
-                                    "BIS_Attentional",
-                                    "BIS_Motor",
-                                    "BIS_NonPlanning",
-                                    "EQ_Total",
-                                    "Gambling",
-                                    "Sex",
-                                    "Buying",
-                                    "Eating",
-                                    "Hobbyism.Punding",
-                                    "Medication.Use",
-                                    "ICD.Total",
-                                    "QUIP.Total",
-                                    "BDI_Total",
-                                    "GAI_Total",
-                                    "CarerBIS_Total",
-                                    "CarerBIS_Attentional",
-                                    "CarerBIS_Motor",
-                                    "CarerBIS_NonPlanning",
-                                    "CarerEQ_Total",
-                                    "NPI_Total",
-                                    "ZBI_Total",
-                                    "RQI_Total",
-                                    "UPDRS_Total",
-                                    "MOCA_Total",
-                                    "MMSE_Total",
-                                    "DelayDiscount_K"),sep="")]<-NA
 
 FU2DBS[FU2DBS$ID==36,paste("FU2_",c("CarerBIS_Total",
                                     "CarerBIS_Attentional",
@@ -280,36 +177,45 @@ FU2DBS[FU2DBS$ID==36,paste("FU2_",c("CarerBIS_Total",
                                     "ZBI_Total",
                                     "RQI_Total"),sep="")]<-NA
 
-FU2DBS[FU2DBS$ID==38,paste("FU2_",c("Apathy_Total",
-                                    "BIS_Total",
-                                    "BIS_Attentional",
-                                    "BIS_Motor",
-                                    "BIS_NonPlanning",
-                                    "EQ_Total",
-                                    "Gambling",
-                                    "Sex",
-                                    "Buying",
-                                    "Eating",
-                                    "Hobbyism.Punding",
-                                    "Medication.Use",
-                                    "ICD.Total",
-                                    "QUIP.Total",
-                                    "BDI_Total",
-                                    "GAI_Total",
-                                    "CarerBIS_Total",
-                                    "CarerBIS_Attentional",
-                                    "CarerBIS_Motor",
-                                    "CarerBIS_NonPlanning",
-                                    "CarerEQ_Total",
-                                    "NPI_Total",
-                                    "ZBI_Total",
-                                    "RQI_Total",
-                                    "UPDRS_Total",
-                                    "MOCA_Total",
-                                    "MMSE_Total",
-                                    "DelayDiscount_K"),sep="")]<-NA
+FU2DBS[FU2DBS$ID==50,paste("FU2_",c("CarerBIS_Total",
+                        "CarerBIS_Attentional",
+                        "CarerBIS_Motor",
+                        "CarerBIS_NonPlanning",
+                        "CarerEQ_Total",
+                        "NPI_Total",
+                        "ZBI_Total",
+                        "RQI_Total"),sep="")]<-NA
 
+FU2DBS[FU2DBS$ID==51,paste("FU2_",c("CarerBIS_Total",
+                        "CarerBIS_Attentional",
+                        "CarerBIS_Motor",
+                        "CarerBIS_NonPlanning",
+                        "CarerEQ_Total"),sep="")]<-NA
 
+FU2DBS[FU2DBS$ID==62,paste("FU2_",c("UPDRS_Total",
+                            "UPDRS_Left",
+                            "UPDRS_Right",
+                            "UPDRS_Axial",
+                            "MOCA_Total",
+                            "MMSE_Total",
+                            "DelayDiscount_K"),sep="")]<-NA
+
+FU2DBS[FU2DBS$ID==64,paste("FU2_",c("Apathy_Total",
+                        "BIS_Total",
+                        "BIS_Attentional",
+                        "BIS_Motor",
+                        "BIS_NonPlanning",
+                        "EQ_Total",
+                        "Gambling",
+                        "Sex",
+                        "Buying",
+                        "Eating",
+                        "Hobbyism.Punding",
+                        "Medication.Use",
+                        "ICD.Total",
+                        "QUIP.Total",
+                        "BDI_Total",
+                        "GAI_Total"),sep="")]<-NA
 
 FU3DBS[FU3DBS$ID==43,paste("FU3_",c("CarerBIS_Total",
                                     "CarerBIS_Attentional",
@@ -329,99 +235,6 @@ FU3DBS[FU3DBS$ID==47,paste("FU3_",c("Gambling",
                                     "ICD.Total",
                                     "QUIP.Total"),sep="")]<-NA
 
-
-FU2DBS[FU2DBS$ID==50,paste("FU2_",c("CarerBIS_Total",
-                                    "CarerBIS_Attentional",
-                                    "CarerBIS_Motor",
-                                    "CarerBIS_NonPlanning",
-                                    "CarerEQ_Total",
-                                    "NPI_Total",
-                                    "ZBI_Total",
-                                    "RQI_Total"),sep="")]<-NA
-
-
-FU2DBS[FU2DBS$ID==51,paste("FU2_",c("CarerBIS_Total",
-                                    "CarerBIS_Attentional",
-                                    "CarerBIS_Motor",
-                                    "CarerBIS_NonPlanning",
-                                    "CarerEQ_Total"),sep="")]<-NA
-
-
-FU4DBS[FU4DBS$ID==51,paste("FU4_",c("Apathy_Total",
-                                    "BIS_Total",
-                                    "BIS_Attentional",
-                                    "BIS_Motor",
-                                    "BIS_NonPlanning",
-                                    "EQ_Total",
-                                    "Gambling",
-                                    "Sex",
-                                    "Buying",
-                                    "Eating",
-                                    "Hobbyism.Punding",
-                                    "Medication.Use",
-                                    "ICD.Total",
-                                    "QUIP.Total",
-                                    "BDI_Total",
-                                    "GAI_Total",
-                                    "CarerBIS_Total",
-                                    "CarerBIS_Attentional",
-                                    "CarerBIS_Motor",
-                                    "CarerBIS_NonPlanning",
-                                    "CarerEQ_Total",
-                                    "NPI_Total",
-                                    "ZBI_Total",
-                                    "RQI_Total",
-                                    "UPDRS_Total",
-                                    "MOCA_Total",
-                                    "MMSE_Total",
-                                    "DelayDiscount_K"),sep="")]<-NA
-
-FU2DBS[FU2DBS$ID==59,paste("FU2_",c("Apathy_Total",
-                                    "BIS_Total",
-                                    "BIS_Attentional",
-                                    "BIS_Motor",
-                                    "BIS_NonPlanning",
-                                    "EQ_Total",
-                                    "Gambling",
-                                    "Sex",
-                                    "Buying",
-                                    "Eating",
-                                    "Hobbyism.Punding",
-                                    "Medication.Use",
-                                    "ICD.Total",
-                                    "QUIP.Total",
-                                    "BDI_Total",
-                                    "GAI_Total",
-                                    "CarerBIS_Total",
-                                    "CarerBIS_Attentional",
-                                    "CarerBIS_Motor",
-                                    "CarerBIS_NonPlanning",
-                                    "CarerEQ_Total",
-                                    "NPI_Total",
-                                    "ZBI_Total",
-                                    "RQI_Total",
-                                    "UPDRS_Total",
-                                    "MOCA_Total",
-                                    "MMSE_Total",
-                                    "DelayDiscount_K"),sep="")]<-NA
-
-FU2DBS[FU2DBS$ID==64,paste("FU2_",c("Apathy_Total",
-                                    "BIS_Total",
-                                    "BIS_Attentional",
-                                    "BIS_Motor",
-                                    "BIS_NonPlanning",
-                                    "EQ_Total",
-                                    "Gambling",
-                                    "Sex",
-                                    "Buying",
-                                    "Eating",
-                                    "Hobbyism.Punding",
-                                    "Medication.Use",
-                                    "ICD.Total",
-                                    "QUIP.Total",
-                                    "BDI_Total",
-                                    "GAI_Total"),sep="")]<-NA
-
 FU3DBS[FU3DBS$ID==60,paste("FU3_",c("CarerBIS_Total",
                                     "CarerBIS_Attentional",
                                     "CarerBIS_Motor",
@@ -431,7 +244,7 @@ FU3DBS[FU3DBS$ID==60,paste("FU3_",c("CarerBIS_Total",
                                     "ZBI_Total",
                                     "RQI_Total"),sep="")]<-NA
 
-FU3DBS[FU3DBS$ID==60,paste("FU3_",c("CarerBIS_Total",
+FU4DBS[FU4DBS$ID==60,paste("FU4_",c("CarerBIS_Total",
                                     "CarerBIS_Attentional",
                                     "CarerBIS_Motor",
                                     "CarerBIS_NonPlanning",
@@ -439,38 +252,6 @@ FU3DBS[FU3DBS$ID==60,paste("FU3_",c("CarerBIS_Total",
                                     "NPI_Total",
                                     "ZBI_Total",
                                     "RQI_Total"),sep="")]<-NA
-
-
-PreDBS[PreDBS$ID==62,paste("Pre_",c("BDI_Total"),sep="")]<-NA
-
-
-FU1DBS[FU1DBS$ID==62,paste("FU1_",c("Apathy_Total",
-                                    "Gambling",
-                                    "Sex",
-                                    "Buying",
-                                    "Eating",
-                                    "Hobbyism.Punding",
-                                    "Medication.Use",
-                                    "ICD.Total",
-                                    "QUIP.Total",
-                                    "GAI_Total",
-                                    "CarerBIS_Total",
-                                    "CarerBIS_Attentional",
-                                    "CarerBIS_Motor",
-                                    "CarerBIS_NonPlanning",
-                                    "CarerEQ_Total",
-                                    "NPI_Total",
-                                    "ZBI_Total",
-                                    "RQI_Total",
-                                    "UPDRS_Total",
-                                    "MOCA_Total",
-                                    "MMSE_Total",
-                                    "DelayDiscount_K"),sep="")]<-NA
-
-FU2DBS[FU2DBS$ID==62,paste("FU2_",c("UPDRS_Total",
-                                    "MOCA_Total",
-                                    "MMSE_Total",
-                                    "DelayDiscount_K"),sep="")]<-NA
 
 
 #Get rid of the RQI for ID==50 as caregiver was the child and not the spouse
@@ -505,8 +286,6 @@ FU2DBS[FU2DBS$ID==67,paste("FU2_",c("RQI_Total"),sep="")]<-NA
 FU3DBS[FU3DBS$ID==67,paste("FU3_",c("RQI_Total"),sep="")]<-NA
 FU4DBS[FU4DBS$ID==67,paste("FU4_",c("RQI_Total"),sep="")]<-NA
 
-
-
 #tag the timepoint data char
 PreDBS$Timepoint<-"00 BaseLine Prior to DBS"
 FU1DBS$Timepoint<-"01 +2wks post DBS"
@@ -535,12 +314,13 @@ list.of.vars.for.plotting.no.prefix<-c(
   "_Medication.Use"       ,"_ICD.Total"            ,"_QUIP.Total"           ,"_BDI_Total"          , 
   "_GAI_Total"            ,"_CarerBIS_Total"       ,"_CarerBIS_Attentional" ,"_CarerBIS_Motor"     , 
   "_CarerBIS_NonPlanning" ,"_CarerEQ_Total"        ,"_NPI_Total"            ,"_ZBI_Total"          , 
-  "_RQI_Total"            ,"_UPDRS_Total"          ,"_MOCA_Exec"            ,"_MOCA_Naming"        , 
+  "_RQI_Total"            ,"_UPDRS_Total"          ,"_MOCA_Exec"            ,"_MOCA_Naming"        ,
   "_MOCA_Atten"           ,"_MOCA_Lang"            ,"_MOCA_Abst"            ,"_MOCA_Recall"        , 
   "_MOCA_Orient"          ,"_MOCA_Total"           ,"_MMSE_Total"           ,"_Hayling_BoxA"       , 
   "_Hayling_BoxB"         ,"_Hayling_BoxC"         ,"_Hayling_Overall"      ,"_Hayling_CatAErrors" , 
   "_Hayling_CatBErrors"   ,"_Hayling_ABErrorScore" ,"_ELF_TotalCorrect"     ,"_ELF_RuleViolations" , 
-  "_ELF_Repetitions"      ,"_DelayDiscount_K"      ,"_LEDD"
+  "_ELF_Repetitions"      ,"_DelayDiscount_K"      ,"_LEDD"                 ,"_UPDRS_Left"         ,
+  "_UPDRS_Right"          ,"_UPDRS_Total"
 )
 
 PreDBS.stack<-PreDBS[,c("ID","Timepoint","TimepointNum", paste("Pre",list.of.vars.for.plotting.no.prefix,sep=""))]
@@ -565,7 +345,7 @@ stacked.long.unified<-rbind(PreDBS.stack,
 
 #stacked.long.unified
 #This is the long version of the data set - stacked, so that ID is repeated and time point is given on each new line
-stacked.long.unified<-merge(PreDBS[,c("ID", "Age","ClinicalSubtype","TremorAkinesiaSubtype",  "Gender", "Signif.Psych", "SideofOnset", "HoehnandYahrStage", "YearsSinceDiagnosis")],stacked.long.unified, by="ID")
+stacked.long.unified<-merge(PreDBS[,c("ID", "Age", "ClinicalSubtype","TremorAkinesiaSubtype",  "Gender", "Signif.Psych", "SideofOnset", "HoehnandYahrStage", "YearsSinceDiagnosis")],stacked.long.unified, by="ID")
 
 
 #make formatted vars for splitting the plots
@@ -604,5 +384,7 @@ cart.impute.stacked.long.unified.mids<-
 cart.impute.stacked.long.unified<-complete(cart.impute.stacked.long.unified.mids,1)
 
 #when it is done, write it out as csv
-write.csv(cart.impute.stacked.long.unified, file="E:/Documents and Settings/Administrator/Desktop/Phil_Mosley/WorkingData/stacked_long_unified_with_cart_imputation.csv")
+write.csv(cart.impute.stacked.long.unified, file="stacked_long_unified_with_cart_imputation.csv")
+
+#Remember to insert timepoint with NAs at 13 weeks for patient 01 otherwise it messes up the rest of the calcs
 
