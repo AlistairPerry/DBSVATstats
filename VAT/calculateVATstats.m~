@@ -186,9 +186,9 @@ end
 
 fid = fopen([outputfile], 'wt');
 
-fprintf(fid, '%s\t%s\t%s\t%s\t%s\t%s\t%s\n', 'ID', 'Rmotorperc','Lmotorperc','Rassocperc','Lassocperc','Rlimbicperc','Llimbicperc','Rmotorcent','Lmotorcent','Rassoccent','Lassoccent','Rlimbiccent','Llimbiccent');
+fprintf(fid, '%s\t%s\t%s\t%s\t%s\t%s\t%s\n', 'ID', 'Rmotorperc','Lmotorperc','Rassocperc','Lassocperc','Rlimbicperc','Llimbicperc');
 for s = 1:length(subFolders)
-    fprintf(fid, '%s\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\n', VATsubjids{s,1},VATstatsall(s,1),VATstatsall(s,2),VATstatsall(s,3),VATstatsall(s,4),VATstatsall(s,5),VATstatsall(s,6),VATstatsall(s,7),VATstatsall(s,8),VATstatsall(s,9),VATstatsall(s,10),VATstatsall(s,11),VATstatsall(s,12));
+    fprintf(fid, '%s\t%f\t%f\t%f\t%f\t%f\t%f\n', VATsubjids{s,1},VATstatsall(s,1),VATstatsall(s,2),VATstatsall(s,3),VATstatsall(s,4),VATstatsall(s,5),VATstatsall(s,6));
 end
 fclose(fid)
 
