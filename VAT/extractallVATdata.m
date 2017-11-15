@@ -138,11 +138,14 @@ LVATdataallvoxels(Lidentmatkeep)=1;
 write(LVAThdr,LVATdataallvoxels,'LVATdataallvoxels.nii')
 
 %now write out R & L VAT data only within STN
-STNhit=find(STNdata==0);
+STNhit=find(STNdata~=0);
 catLSTNRSTN=cat(2,Lidentmatkeep,Ridentmatkeep);
 sortcatLSTNRSTN=sort(catLSTNRSTN);
+
+VATtempmatch = ismember(sortcatLSTNRSTN,STNhit);
+sortcatLSTNRSTN(VATtempmatch==0)=[];
+
 LRVATonlySTN=sortcatLSTNRSTN;
-LRVATonlySTN(:,STNhit)=[];
 
 %write L R VAT data out as textfile
 
