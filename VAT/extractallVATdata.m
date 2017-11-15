@@ -151,13 +151,6 @@ LRVATonlySTN=sortcatLSTNRSTN;
 
 dlmwrite('LRVATreshapeonlySTN.txt',LRVATonlySTN,'delimiter','\t');
 
-%now write out LVAT data only within LSTN
-reshapeLVATonlySTN=reshapeLVATall;
-LSTNhit=find(LSTNdata==0);
-reshapeLVATonlySTN(:,LSTNhit)=[];
-
-dlmwrite('LVATreshapeallSTNonly.txt',reshapeLVATonlySTN,'delimiter','\t');
-
 %determine most consistent voxels - potentially for mask in fsl randomise masking
 thrperc=0.25;
 thrreq=floor(thrperc*length(subFolders));
