@@ -1,11 +1,12 @@
-function extractallVATdata
+function extractallVATdata(STNfile)
 %extractallVATdata Extract VAT voxels from each subject
 %   Detailed explanation goes here
 
 %required software dependencies:
 %NBS
+%NIFTI
 
-%make sure you are within /Lab_MichaelB/PhilM/VAT_Data_New
+[~,STNdata]=read([STNfile]);
 
 %setup working and subjects directories
 workingdirectory = pwd;
@@ -68,14 +69,15 @@ fclose(fid)
 
 %first right-hemisphere
 %remove voxels with no VAT across all subjs
-VATcolmax=max(reshapeRVATall);
+reshapeRVATallnonzero=reshapeRVATall;
+VATcolmax=max(reshapeRVATallnonzero);
 maxzero=find(VATcolmax==0);
 [~,maxzero]=find(VATcolmax==0);
-reshapeRVATall(:,maxzero)=[];
+reshapeRVATallnonzero(:,maxzero)=[];
 
 %write VAT data out as textfile
 
-dlmwrite('RVATreshapeall.txt',reshapeRVATall,'delimiter','\t');
+dlmwrite('RVATreshapeall.txt',reshapeRVATallnonzero,'delimiter','\t');
 
 % + voxels extracted
 Ridentmatkeep=1:numvoxels;
@@ -92,7 +94,7 @@ write(RVAThdr,RVATdataallvoxels,'RVATdataallvoxels.nii')
 thrperc=0.25;
 thrreq=floor(thrperc*length(subFolders));
 
-sumreshapeRVATall=sum(reshapeRVATall,1);
+sumreshapeRVATall=sum(reshapeRVATallnonzero,1);
 [~,RVATabvthrcol]=find(sumreshapeRVATall>=thrreq);
 
 Ridentmatkeepabvthr=Ridentmatkeep(RVATabvthrcol);
@@ -109,20 +111,22 @@ for i = 1:length(Ridentmatkeep)
 RVATdatadensity(Ridentmatkeep(1,i))=densreshapeRVAT(1,i);  
 end
 
-write(RVAThdr,RVATdatadensity,'RVATdatadensity.nii')
+nii = make_nii(RVATdatadensity, [0.5 0.5 0.5], [0 0 0], 64);
+save_nii(nii, 'RVATdatadensity.nii');
 
 %now left-hemisphere
 %remove voxels with no VAT across all subjs
-VATcolmax=max(reshapeLVATall);
+reshapeLVATallnonzero=reshapeLVATall;
+VATcolmax=max(reshapeLVATallnonzero);
 maxzero=find(VATcolmax==0);
 [~,maxzero]=find(VATcolmax==0);
-reshapeLVATall(:,maxzero)=[];
+reshapeLVATallnonzero(:,maxzero)=[];
 
 %write VAT data out as textfile
 
-dlmwrite('LVATreshapeall.txt',reshapeLVATall,'delimiter','\t');
+dlmwrite('LVATreshapeall.txt',reshapeLVATallnonzero,'delimiter','\t');
 
-% + voxels extracted
+% + information of voxels extracted
 Lidentmatkeep=1:numvoxels;
 Lidentmatkeep(:,maxzero)=[];
 
@@ -133,11 +137,29 @@ LVATdataallvoxels=zeros(size(LVATdata));
 LVATdataallvoxels(Lidentmatkeep)=1;
 write(LVAThdr,LVATdataallvoxels,'LVATdataallvoxels.nii')
 
+%now write out R & L VAT data only within STN
+STNhit=find(STNdata==0);
+catLSTNRSTN=cat(2,Lidentmatkeep,Ridentmatkeep);
+sortcatLSTNRSTN=sort(catLSTNRSTN);
+LRVATonlySTN=sortcatLSTNRSTN;
+LRVATonlySTN(:,STNhit)=[];
+
+%write L R VAT data out as textfile
+
+dlmwrite('LRVATreshapeonlySTN.txt',LRVATonlySTN,'delimiter','\t');
+
+%now write out LVAT data only within LSTN
+reshapeLVATonlySTN=reshapeLVATall;
+LSTNhit=find(LSTNdata==0);
+reshapeLVATonlySTN(:,LSTNhit)=[];
+
+dlmwrite('LVATreshapeallSTNonly.txt',reshapeLVATonlySTN,'delimiter','\t');
+
 %determine most consistent voxels - potentially for mask in fsl randomise masking
 thrperc=0.25;
 thrreq=floor(thrperc*length(subFolders));
 
-sumreshapeLVATall=sum(reshapeLVATall,1);
+sumreshapeLVATall=sum(reshapeLVATallnonzero,1);
 [~,LVATabvthrcol]=find(sumreshapeLVATall>=thrreq);
 
 Lidentmatkeepabvthr=Lidentmatkeep(LVATabvthrcol);
@@ -154,6 +176,7 @@ for i = 1:length(Lidentmatkeep)
 LVATdatadensity(Lidentmatkeep(1,i))=densreshapeLVAT(1,i);  
 end
 
-write(LVAThdr,LVATdatadensity,'LVATdatadensity.nii')
+nii = make_nii(LVATdatadensity, [0.5 0.5 0.5], [0 0 0], 64);
+save_nii(nii, 'LVATdatadensity.nii');
 end
 
