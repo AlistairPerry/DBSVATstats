@@ -144,9 +144,9 @@ sortcatLSTNRSTN=sort(catLSTNRSTN);
 
 VATtempmatch = ismember(sortcatLSTNRSTN,STNhit);
 LRVATreshapeallnonzero=cat(2,reshapeLVATallnonzero,reshapeLVATallnonzero);
-LRVATreshapeallnonzero(:,VATtempmatch==0)=[];
+LRVATreshapeallnonzero(VATtempmatch==0)=[];
 
-LRVATonlySTN=LRVATreshapeallnonzero;
+LRVATonlySTN=sortcatLSTNRSTN;
 
 %write L R VAT data out as textfile
 
