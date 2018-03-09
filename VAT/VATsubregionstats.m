@@ -1,17 +1,25 @@
-function [VATstatsall] = calculateVATstats(STNparcdir,outputfile)
-%UNTITLED Summary of this function goes here
-%   Detailed explanation goes here
+function [VATsubregionout] = VATsubregionstats(STNparcdir,outputfilename)
+%VATsubregionstats Summary statistics of VAT within STN (or other) subregions
 
 %Required arguments:
-    %STNparcdir=Directory containing files corresponding to STN zones
-    %output=Filename for extracted data table 
+%% Input:
+%%% STNparcdir: Directory containing NIFTI files corresponding to the STN zones (Accolla et al. 2014)
+        %Current github repository directory (STNparcs) contains STN subregions
+            %If used, please cite https://www.ncbi.nlm.nih.gov/pubmed/24777915
+        %Ensure subregion NIFTIs are in the same image space as your LEAD DBS files
+        %Note, Possible to include other subregion files
+        
+%% Output:
+%%% outputfilename: Filename for extracted data table containing VATstats
 
-%required software dependencies:
-%NBS
-%NIFTI: https://au.mathworks.com/matlabcentral/fileexchange/8797-tools-for-nifti-and-analyze-image
+%!!! make sure you are within the parent folder that contains the leadDBS output files, with each subfolder defining a subject
+%% Assumed each LEADDBS VAT file for each subject is named 'rLEAD_DBS_VAT_LEFT.nii' - for the left hemisphere, for example.
 
-%make sure you are within /Lab_MichaelB/PhilM/VAT_Data_New (or another
-%folder that contains leadDBS output files)
+
+%Dependencies: NIFTI tools https://au.mathworks.com/matlabcentral/fileexchange/8797-tools-for-nifti-and-analyze-image
+
+%References: https://www.ncbi.nlm.nih.gov/pubmed/24777915
+
 
 %setup working and subjects directories
 workingdirectory = pwd;
@@ -20,7 +28,7 @@ dirFlags=[files.isdir];
 subFolders=files(dirFlags);
 subFolders(1:2)=[];
 
-%load in STN parcels
+%load in parcels of STN subregions for each hemisphere
 
 [~,STNmotorRdata]=read([STNparcdir '/' 'LEAD_DBS_STN_motor_RIGHT.nii']);
 
@@ -34,7 +42,8 @@ subFolders(1:2)=[];
 
 [~,STNlimbicLdata]=read([STNparcdir '/' 'LEAD_DBS_STN_limbic_LEFT.nii']);
 
-%now the STN centroids
+
+%now extract their centroids
 
 [STNmotorRdataCOG,~]=extract_roi([STNparcdir '/' 'LEAD_DBS_STN_motor_RIGHT.nii']);
 
@@ -48,7 +57,8 @@ subFolders(1:2)=[];
 
 [STNlimbicLdataCOG,~]=extract_roi([STNparcdir '/' 'LEAD_DBS_STN_limbic_LEFT.nii']);
 
-%extract their voxels
+
+%finally, extract their corresponding voxels for each subregion
 [STNmotorRvoxs]=find(STNmotorRdata==1);
 
 [STNmotorLvoxs]=find(STNmotorLdata==1);
@@ -61,7 +71,8 @@ subFolders(1:2)=[];
 
 [STNlimbicLvoxs]=find(STNlimbicLdata==1);
 
-%load all subjects VATS and extract
+
+%load all the subjects VAT, as provided with LEAD DBS
 for s = 1:length(subFolders)
     VATindivstats=[];
     
@@ -78,11 +89,13 @@ for s = 1:length(subFolders)
     SubjLVATfile=[currentSubjDir '/' 'rLEAD_DBS_VAT_LEFT.nii'];
     [LVAThdr,LVATdata]=read(SubjLVATfile);
     
-    %calculate proportion of stimulation field in each STN zone
+    %calculate the extent of the stimulation field in each STN zone
+    
+    %first, calculate the "stimulated" voxels
     [r1]=find(RVATdata==1);
     [l1]=find(LVATdata==1);
     
-    %Right Motor
+    %Now determine the percentage overlap, first for Right motor
     
     cors=ismember(r1,STNmotorRvoxs);
     
@@ -154,11 +167,13 @@ for s = 1:length(subFolders)
     Llimbicperc=[length(Llimbicoverlap)./length(STNlimbicLvoxs)]*100;
     end
  
-%Euclidean Distances    
+%Euclidean Distances between electrode contact and subregion COG
 %Calculate subject centroids first
 
 [subjLSTNCOG,~]=extract_roi([SubjLVATfile]);
 [subjRSTNCOG,~]=extract_roi([SubjRVATfile]);
+
+%Now calculate the euclidean distance
 
 DisSTNMotorR=sqrt(abs([(STNmotorRdataCOG(1,1)-subjRSTNCOG(1,1))*(STNmotorRdataCOG(1,1)-subjRSTNCOG(1,1))]+[(STNmotorRdataCOG(1,2)-subjRSTNCOG(1,2))*(STNmotorRdataCOG(1,2)-subjRSTNCOG(1,2))]+[(STNmotorRdataCOG(1,3)-subjRSTNCOG(1,3))*(STNmotorRdataCOG(1,3)-subjRSTNCOG(1,3))]));
 DisSTNMotorL=sqrt(abs([(STNmotorLdataCOG(1,1)-subjLSTNCOG(1,1))*(STNmotorLdataCOG(1,1)-subjLSTNCOG(1,1))]+[(STNmotorLdataCOG(1,2)-subjLSTNCOG(1,2))*(STNmotorLdataCOG(1,2)-subjLSTNCOG(1,2))]+[(STNmotorLdataCOG(1,3)-subjLSTNCOG(1,3))*(STNmotorLdataCOG(1,3)-subjLSTNCOG(1,3))]));
@@ -169,6 +184,7 @@ DisSTNAssocL=sqrt(abs([(STNassocLdataCOG(1,1)-subjLSTNCOG(1,1))*(STNassocLdataCO
 DisSTNLimbicR=sqrt(abs([(STNlimbicRdataCOG(1,1)-subjRSTNCOG(1,1))*(STNlimbicRdataCOG(1,1)-subjRSTNCOG(1,1))]+[(STNlimbicRdataCOG(1,2)-subjRSTNCOG(1,2))*(STNlimbicRdataCOG(1,2)-subjRSTNCOG(1,2))]+[(STNlimbicRdataCOG(1,3)-subjRSTNCOG(1,3))*(STNlimbicRdataCOG(1,3)-subjRSTNCOG(1,3))]));
 DisSTNLimbicL=sqrt(abs([(STNlimbicLdataCOG(1,1)-subjLSTNCOG(1,1))*(STNlimbicLdataCOG(1,1)-subjLSTNCOG(1,1))]+[(STNlimbicLdataCOG(1,2)-subjLSTNCOG(1,2))*(STNlimbicLdataCOG(1,2)-subjLSTNCOG(1,2))]+[(STNlimbicLdataCOG(1,3)-subjLSTNCOG(1,3))*(STNlimbicLdataCOG(1,3)-subjLSTNCOG(1,3))]));
 
+%Output
 %Combine individual VAT overlap stats into single matrix    
 VATindivoverlapstats=cat(2, Rmotorperc, Lmotorperc, Rassocperc, Lassocperc,Rlimbicperc,Llimbicperc);
 
@@ -176,9 +192,9 @@ VATindivoverlapstats=cat(2, Rmotorperc, Lmotorperc, Rassocperc, Lassocperc,Rlimb
 
 VATindivdiststats=cat(2, DisSTNMotorR, DisSTNMotorL, DisSTNAssocR, DisSTNAssocL, DisSTNLimbicR, DisSTNLimbicL);
 
-%And then full subject matrix
+%And then into full subject matrix
 VATindivstats=cat(2,VATindivoverlapstats,VATindivdiststats);
-VATstatsall(s,:)=VATindivstats;
+VATsubregionout(s,:)=VATindivstats;
 
 end
 
@@ -193,7 +209,6 @@ end
 fclose(fid)
 
 %done!
-
 
 function [COG, rois] = extract_roi(nii)
 %% Extract centre of gravity for each integer within a NIFTI file
