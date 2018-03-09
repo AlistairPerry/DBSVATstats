@@ -7,8 +7,7 @@ Package was performed upon 64 PD patients receiving DBS stimulation on the STN, 
 Full citation if you find this package useful: 
 * The Site of Stimulation Moderates Neuropsychiatric Symptoms after Subthalamic Deep Brain Stimulation for Parkinson's Disease. Philip Edward Mosley, David Smith, Terry Coyne, Peter Silburn, Michael Breakspear, Alistair Perry. Neuroimage: Clinical, in press
 
-![graphical abstract](https://user-images.githubusercontent.com/23748735/37216942-7e873f0a-23bc-11e8-8181-5668b58480f1.png)
-
+![graphical abstract](https://user-images.githubusercontent.com/23748735/37217055-c55aaa8e-23bc-11e8-95c1-de12e3cd9d8f.png)
 
 Contributers: Alistair Perry and Philip Mosley
 
