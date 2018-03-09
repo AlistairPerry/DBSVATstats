@@ -1,4 +1,16 @@
-function [loc, rois] = extract_roi(nii)
+function [COG, rois] = extract_roi(nii)
+%% Extract centre of gravity for each integer within a NIFTI file
+
+%% Input:
+%%% nii: Filename of input nii file
+
+%% Output
+%%% COG: Centre of gravity for each integer i, denoted by a i x 3 structure
+%%% rois: Structure corresponding to one fields; 
+%%%% 1) coord: coordinates for each voxel within each integer
+
+%% Dependencies:
+%%% NIFTI tools: https://de.mathworks.com/matlabcentral/fileexchange/8797-tools-for-nifti-and-analyze-image
 
 nifti = load_untouch_nii(nii);
 
@@ -17,17 +29,11 @@ for i = 1:nifti.hdr.dime.dim(2)
     end
 end
 
-
-
 for i = 1:length(rois)
     rois{i}.coord(:,1) = (rois{i}.coord(:,1)*nifti.hdr.hist.srow_x(1)) + nifti.hdr.hist.srow_x(4);
     rois{i}.coord(:,2) = (rois{i}.coord(:,2)*nifti.hdr.hist.srow_y(2)) + nifti.hdr.hist.srow_y(4);
     rois{i}.coord(:,3) = (rois{i}.coord(:,3)*nifti.hdr.hist.srow_z(3)) + nifti.hdr.hist.srow_z(4);
-    rois{i}.centre = mean(rois{i}.coord);
-end
-
-for i = 1:length(rois)
-    loc(i,:) = rois{i}.centre;
+    COG(i,:) = mean(rois{i}.coord);
 end
 
 end
