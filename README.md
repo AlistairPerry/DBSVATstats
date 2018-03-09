@@ -9,4 +9,5 @@ Full citation if you find this package useful:
 
 
 Contributers: Alistair Perry and Philip Mosley
+
 If any questions or opportunities to collaborate, please email either alistairgperry at gmail or p.mosley at uq.edu.au 
