@@ -1,4 +1,4 @@
-function extractallVATdata(STNfile)
+function VATsummarydata(STNfile)
 %extractallVATdata Extract VAT voxels from each subject
 %   Detailed explanation goes here
 
